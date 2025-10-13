@@ -1,0 +1,237 @@
+﻿@{
+    ViewData["Title"] = "Panel de Operaciones Administrativo";
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #fff;
+            padding: 20px;
+            border-bottom: 3px solid #00bcd4;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background-color: #00bcd4;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .panel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 188, 212, 0.2);
+            transform: translateY(-5px);
+            border-color: #00bcd4;
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #00bcd4;
+        }
+
+        .card-title {
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .card-description {
+            color: #666;
+            font-size: 12px;
+            display: none;
+        }
+
+        .card:hover .card-description {
+            display: block;
+        }
+
+        .section-title {
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            padding-left: 10px;
+            border-left: 4px solid #00bcd4;
+        }
+
+        .footer {
+            background-color: #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📦</div>
+            <h1>Panel de Operaciones Administrativo</h1>
+        </div>
+
+        <!-- Sección Chasis/Vehículos -->
+        <div class="section-title">Gestión de Chasis y Vehículos</div>
+        <div class="panel-grid">
+            <button class="card" onclick="alert('Registro de Chasis / Vehículos')">
+                <div class="card-icon">🚗</div>
+                <div class="card-title">Registro de Chasis / Vehículos</div>
+                <div class="card-description">Registrar nuevos vehículos</div>
+            </button>
+
+            <button class="card" onclick="alert('Transferencias de Chasis entre Almacenes')">
+                <div class="card-icon">🔄</div>
+                <div class="card-title">Transferencias de Chasis entre Almacenes</div>
+                <div class="card-description">Gestionar transferencias</div>
+            </button>
+
+            <button class="card" onclick="alert('Listado de Transferencias de Chasis entre Almacenes')">
+                <div class="card-icon">📋</div>
+                <div class="card-title">Listado de Transferencias de Chasis entre Almacenes</div>
+                <div class="card-description">Ver transferencias registradas</div>
+            </button>
+
+            <button class="card" onclick="alert('Existencia de Chasis x Almacen')">
+                <div class="card-icon">📊</div>
+                <div class="card-title">Existencia de Chasis x Almacén</div>
+                <div class="card-description">Consultar existencias</div>
+            </button>
+
+            <button class="card" onclick="alert('Lista de Vehículos/Motores (Datos Generales)')">
+                <div class="card-icon">🛠️</div>
+                <div class="card-title">Lista de Vehículos/Motores (Datos Generales)</div>
+                <div class="card-description">Datos generales de vehículos</div>
+            </button>
+        </div>
+
+        <!-- Sección Ventas y Reportes -->
+        <div class="section-title">Reportes de Ventas</div>
+        <div class="panel-grid">
+            <button class="card" onclick="alert('Reporte de Ventas / Facturas')">
+                <div class="card-icon">💰</div>
+                <div class="card-title">Reporte de Ventas / Facturas</div>
+                <div class="card-description">Ver reportes de ventas</div>
+            </button>
+
+            <button class="card" onclick="alert('Reporte de Ventas / Conduces')">
+                <div class="card-icon">📄</div>
+                <div class="card-title">Reporte de Ventas / Conduces</div>
+                <div class="card-description">Ver conduces de venta</div>
+            </button>
+
+            <button class="card" onclick="alert('Reporte Ventas de Chasis')">
+                <div class="card-icon">📈</div>
+                <div class="card-title">Reporte Ventas de Chasis</div>
+                <div class="card-description">Análisis de ventas de chasis</div>
+            </button>
+
+            <button class="card" onclick="alert('Relación Ingresos / Comisión Vendedores')">
+                <div class="card-icon">💵</div>
+                <div class="card-title">Relación Ingresos / Comisión Vendedores</div>
+                <div class="card-description">Comisiones de vendedores</div>
+            </button>
+
+            <button class="card" onclick="alert('Relación Ingresos Generales')">
+                <div class="card-icon">📑</div>
+                <div class="card-title">Relación Ingresos Generales</div>
+                <div class="card-description">Ingresos totales</div>
+            </button>
+
+            <button class="card" onclick="alert('Relación Ingresos / Cuadre de Caja')">
+                <div class="card-icon">🏦</div>
+                <div class="card-title">Relación Ingresos / Cuadre de Caja</div>
+                <div class="card-description">Cuadre de caja diario</div>
+            </button>
+        </div>
+
+        <!-- Sección Clientes -->
+        <div class="section-title">Gestión de Clientes</div>
+        <div class="panel-grid">
+            <button class="card" onclick="alert('Registro de Clientes')">
+                <div class="card-icon">👥</div>
+                <div class="card-title">Registro de Clientes</div>
+                <div class="card-description">Crear y editar clientes</div>
+            </button>
+
+            <button class="card" onclick="alert('Cuentas x Cobrar / Estado x Clientes -General')">
+                <div class="card-icon">💳</div>
+                <div class="card-title">Cuentas x Cobrar / Estado x Clientes</div>
+                <div class="card-description">Estado de cuentas por cobrar</div>
+            </button>
+
+            <button class="card" onclick="alert('Estado de Cuenta Individual x Cliente')">
+                <div class="card-icon">📝</div>
+                <div class="card-title">Estado de Cuenta Individual x Cliente</div>
+                <div class="card-description">Detalle por cliente</div>
+            </button>
+
+            <button class="card" onclick="alert('Análisis de Antigüedad Resumido x Cliente')">
+                <div class="card-icon">⏱️</div>
+                <div class="card-title">Análisis de Antigüedad Resumido x Cliente</div>
+                <div class="card-description">Análisis de deuda antigüa</div>
+            </button>
+        </div>
+    </div>
+</body>
+</html>
