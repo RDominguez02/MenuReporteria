@@ -1,0 +1,319 @@
+﻿@model ResultadoReporteVentas
+
+@{
+    ViewData["Title"] = "Reporte de Ventas";
+}
+
+<link rel="stylesheet" href="~/css/reporte.css" />
+
+<div class="reporte-container">
+    <!-- Header -->
+    <div class="reporte-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="reporte-header-icon">💰</div>
+            <h1>Reporte de Ventas</h1>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <form id="filtrosForm" class="filters-section" method="post" action="@Url.Action("Generar", "Ventas")">
+        <div class="filters-title">Filtros de Búsqueda</div>
+
+        <div class="filters-grid">
+            <!-- Fecha Desde -->
+            <div class="filter-group">
+                <label>Desde la Fecha</label>
+                <input type="date" name="fechaDesde" value="@Model?.Filtros?.FechaDesde.ToString("yyyy-MM-dd")" required>
+            </div>
+
+            <!-- Fecha Hasta -->
+            <div class="filter-group">
+                <label>Hasta la Fecha</label>
+                <input type="date" name="fechaHasta" value="@Model?.Filtros?.FechaHasta.ToString("yyyy-MM-dd")" required>
+            </div>
+
+            <!-- Cliente -->
+            <div class="filter-group">
+                <label>Cliente</label>
+                <input type="text" name="cliente" placeholder="Nombre del cliente..." value="@Model?.Filtros?.Cliente">
+            </div>
+
+            <!-- Vendedor -->
+            <div class="filter-group">
+                <label>Vendedor</label>
+                <select name="vendedor">
+                    <option value="">-- Seleccionar --</option>
+                    @if (Model?.Filtros?.VendedoresDisponibles != null)
+                    {
+                        @foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
+                        {
+                            @* <option value="@vendedor" @(Model.Filtros.Vendedor == vendedor ? "selected" : "")>@vendedor</option> *@
+                            <option value="@vendedor" selected="@(Model.Filtros.Vendedor == vendedor ? "selected" : null)">
+                                @vendedor
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Valor Desde -->
+            <div class="filter-group">
+                <label>Valor Desde</label>
+                <input type="number" name="valorDesde" step="0.01" placeholder="0.00" value="@Model?.Filtros?.ValorDesde">
+            </div>
+
+            <!-- Valor Hasta -->
+            <div class="filter-group">
+                <label>Valor Hasta</label>
+                <input type="number" name="valorHasta" step="0.01" placeholder="0.00" value="@Model?.Filtros?.ValorHasta">
+            </div>
+
+            <!-- NCF -->
+            <div class="filter-group">
+                <label>NCF</label>
+                <input type="text" name="ncf" placeholder="Buscar por NCF..." value="@Model?.Filtros?.Ncf">
+            </div>
+
+            <!-- Factura Desde -->
+            <div class="filter-group">
+                <label>Factura Desde</label>
+                <input type="number" name="facturaDesde" placeholder="0" value="@Model?.Filtros?.FacturaDesde">
+            </div>
+
+            <!-- Factura Hasta -->
+            <div class="filter-group">
+                <label>Factura Hasta</label>
+                <input type="number" name="facturaHasta" placeholder="0" value="@Model?.Filtros?.FacturaHasta">
+            </div>
+
+            <!-- Caja -->
+            <div class="filter-group">
+                <label>Caja</label>
+                <select name="caja">
+                    <option value="">-- Todas --</option>
+                    @if (Model?.Filtros?.CajasDisponibles != null)
+                    {
+                        @foreach (var caja in Model.Filtros.CajasDisponibles)
+                        {
+                            <option value="@caja" selected="@(Model.Filtros.Caja == caja ? "selected" : null)">@caja</option>
+
+
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Cargando datos...</p>
+    </div>
+
+    <!-- Tabla de Resultados -->
+    <div id="tablaResultados" class="table-container">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Factura</th>
+                    <th>NCF</th>
+                    <th>Cliente</th>
+                    <th>Vendedor</th>
+                    <th>Caja</th>
+                    <th>Turno</th>
+                    <th>Monto Bruto</th>
+                    <th>ITBIS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Ventas != null && Model.Ventas.Count > 0)
+                {
+                    @foreach (var venta in Model.Ventas)
+                    {
+                        <tr>
+                            <td>@venta.Fecha.ToString("dd/MM/yyyy")</td>
+                            <td>@venta.Factura</td>
+                            <td>@venta.Ncf</td>
+                            <td>@venta.Cliente</td>
+                            <td>@venta.Vendedor</td>
+                            <td>@venta.Caja</td>
+                            <td>@venta.Turno</td>
+                            <td style="text-align: right;">@venta.MontoBruto.ToString("N2")</td>
+                            <td style="text-align: right;">@venta.Itbis.ToString("N2")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">No hay datos para mostrar</div>
+                            <small>Ajusta los filtros y haz clic en "Aceptar" para cargar los datos</small>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Resumen -->
+    <div class="table-footer">
+        <div class="summary-item">
+            <div class="summary-item-label">Total de Facturas</div>
+            <div class="summary-item-value" id="totalFacturas">@(Model?.TotalFacturas ?? 0)</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-item-label">Total de Chasis</div>
+            <div class="summary-item-value" id="totalChasis">@(Model?.TotalChasis ?? 0)</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-item-label">Valor Total</div>
+            <div class="summary-item-value" id="valorTotal">RD$ @((Model?.ValorTotal ?? 0).ToString("N2"))</div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="actions-group">
+        <button type="button" class="btn-action btn-aceptar" onclick="generarReporte()">
+            ✓ Aceptar
+        </button>
+        <button type="button" class="btn-action btn-imprimir" onclick="imprimirReporte()">
+            🖨️ Imprimir
+        </button>
+        <button type="button" class="btn-action btn-exportar" onclick="exportarReporte()">
+            📥 Exportar
+        </button>
+        <button type="button" class="btn-action btn-retornar" onclick="window.location.href='@Url.Action("Index", "Home")'">
+            ← Retornar
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Generar reporte
+        function generarReporte() {
+            const form = document.getElementById('filtrosForm');
+            const formData = new FormData(form);
+            
+            // Mostrar spinner
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('tablaResultados').style.display = 'none';
+
+            // Enviar formulario
+            fetch('@Url.Action("Generar", "Ventas")', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    actualizarTabla(data.data);
+                    actualizarResumen(data);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+                
+                // Ocultar spinner
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('tablaResultados').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al cargar los datos');
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('tablaResultados').style.display = 'block';
+            });
+        }
+
+        // Actualizar tabla con datos
+        function actualizarTabla(resultado) {
+            const tbody = document.querySelector('.results-table tbody');
+            
+            if (resultado.ventas && resultado.ventas.length > 0) {
+                let html = '';
+                resultado.ventas.forEach(venta => {
+                    const fecha = new Date(venta.fecha);
+                    const fechaFormateada = fecha.toLocaleDateString('es-DO');
+                    
+                    html += `
+                        <tr>
+                            <td>${fechaFormateada}</td>
+                            <td>${venta.factura}</td>
+                            <td>${venta.ncf || ''}</td>
+                            <td>${venta.cliente}</td>
+                            <td>${venta.vendedor || ''}</td>
+                            <td>${venta.caja}</td>
+                            <td>${venta.turno}</td>
+                            <td style="text-align: right;">${parseFloat(venta.montoBruto).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td style="text-align: right;">${parseFloat(venta.itbis).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">No se encontraron resultados</div>
+                            <small>Intenta ajustar los filtros de búsqueda</small>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Actualizar resumen
+        function actualizarResumen(data) {
+            document.getElementById('totalFacturas').textContent = data.totalFacturas;
+            document.getElementById('totalChasis').textContent = data.totalChasis;
+            document.getElementById('valorTotal').textContent = 'RD$ ' + data.valorTotal;
+        }
+
+        // Imprimir reporte
+        function imprimirReporte() {
+            window.print();
+        }
+
+        // Exportar reporte
+        function exportarReporte() {
+            const form = document.getElementById('filtrosForm');
+            const formData = new FormData(form);
+            
+            fetch('@Url.Action("Exportar", "Ventas")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Exportación completada');
+                    // Aquí puedes agregar lógica para descargar el archivo
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al exportar');
+            });
+        }
+
+        // Cargar datos al presionar Enter en los campos
+        document.querySelectorAll('.filter-group input, .filter-group select').forEach(element => {
+            element.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    generarReporte();
+                }
+            });
+        });
+    </script>
+}
