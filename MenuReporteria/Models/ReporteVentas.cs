@@ -32,8 +32,8 @@ namespace MenuReporteria.Models
         public decimal? ValorDesde { get; set; }
         public decimal? ValorHasta { get; set; }
         public string Ncf { get; set; }
-        public int? FacturaDesde { get; set; }
-        public int? FacturaHasta { get; set; }
+        public string? FacturaDesde { get; set; }
+        public string? FacturaHasta { get; set; }
         public string Caja { get; set; }
         public List<string> CajasDisponibles { get; set; }
         public List<string> VendedoresDisponibles { get; set; }

@@ -18,7 +18,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Header */
+/* Header - Ahora incluye todo en una línea */
 .reporte-header {
     display: flex;
     justify-content: space-between;
@@ -26,16 +26,21 @@
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 2px solid var(--primary);
+    gap: 2rem;
+    flex-wrap: wrap;
 }
 
-    .reporte-header h1 {
-        font-size: 2rem;
-        color: var(--dark);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+.reporte-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.reporte-header h1 {
+    font-size: 2rem;
+    color: var(--dark);
+    margin: 0;
+}
 
 .reporte-header-icon {
     width: 50px;
@@ -49,6 +54,59 @@
     font-size: 1.8rem;
 }
 
+/* Resumen en el Header */
+.header-summary {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.header-summary-item {
+    text-align: center;
+    min-width: 120px;
+}
+
+.header-summary-label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.header-summary-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--primary);
+}
+
+/* Botones en el Header */
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Botón Toggle Filtros */
+.btn-toggle-filters {
+    padding: 0.6rem 1.2rem;
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .btn-toggle-filters:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
 /* Filtros */
 .filters-section {
     background: linear-gradient(135deg, #f9f9f9 0%, #fff 100%);
@@ -56,7 +114,18 @@
     border-radius: 10px;
     padding: 2rem;
     margin-bottom: 2rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    max-height: 1000px;
 }
+
+    .filters-section.hidden {
+        max-height: 0;
+        padding: 0;
+        margin-bottom: 0;
+        border: none;
+        opacity: 0;
+    }
 
 .filters-title {
     font-size: 1.2rem;
@@ -109,6 +178,98 @@
             box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
         }
 
+/* Paginación */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 8px;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.records-per-page {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+    .records-per-page label {
+        font-weight: 600;
+        color: var(--dark);
+        font-size: 0.9rem;
+    }
+
+    .records-per-page select {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+        .records-per-page select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+        }
+
+.pagination-text {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.pagination-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+    .pagination-btn:hover:not(:disabled) {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+.pagination-ellipsis {
+    padding: 0.5rem;
+    color: #666;
+}
+
 /* Tabla de Resultados */
 .table-container {
     overflow-x: auto;
@@ -146,51 +307,14 @@
         transition: background-color 0.2s ease;
     }
 
-/* Pie de Tabla */
-.table-footer {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.summary-item {
-    background: linear-gradient(135deg, #f0f9ff 0%, #fff 100%);
-    border-left: 4px solid var(--primary);
-    padding: 1rem;
-    border-radius: 6px;
-}
-
-.summary-item-label {
-    font-size: 0.9rem;
-    color: #666;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-}
-
-.summary-item-value {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--primary);
-}
-
 /* Botones de Acción */
-.actions-group {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 2px solid var(--border);
-}
-
 .btn-action {
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1.2rem;
     border: none;
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
@@ -268,16 +392,47 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-    .reporte-header {
-        flex-direction: column;
-        align-items: flex-start;
+@media (max-width: 1400px) {
+    .header-summary {
         gap: 1rem;
     }
 
-        .reporte-header h1 {
-            font-size: 1.5rem;
-        }
+    .header-summary-item {
+        min-width: 100px;
+    }
+
+    .header-summary-value {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 1200px) {
+    .reporte-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-summary,
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 768px) {
+    .reporte-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .header-summary {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .header-summary-item {
+        text-align: left;
+        width: 100%;
+    }
 
     .filters-grid {
         grid-template-columns: 1fr;
@@ -292,13 +447,25 @@
             padding: 0.75rem;
         }
 
-    .actions-group {
+    .header-actions {
         flex-direction: column;
+        width: 100%;
     }
 
-    .btn-action {
+    .btn-action,
+    .btn-toggle-filters {
         width: 100%;
         justify-content: center;
     }
-}
 
+    .pagination-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagination-controls {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}

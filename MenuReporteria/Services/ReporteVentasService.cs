@@ -47,13 +47,13 @@ namespace MenuReporteria.Services
                     query += " AND he_monto <= @ValorHasta";
 
                 if (!string.IsNullOrEmpty(filtros.Ncf))
-                    query += " AND he_ncf LIKE '%' + @Ncf + '%'";
+                    query += " AND he_ncf LIKE @Ncf + '%'";
 
-                if (filtros.FacturaDesde.HasValue)
-                    query += " AND he_factura >= @FacturaDesde";
+                if (!string.IsNullOrEmpty(filtros.FacturaDesde))
+                    query += " AND he_factura LIKE '%' + @FacturaDesde + '%'";
 
-                if (filtros.FacturaHasta.HasValue)
-                    query += " AND he_factura <= @FacturaHasta";
+                //if (filtros.FacturaHasta.HasValue)
+                //    query += " AND he_factura LIKE @FacturaHasta";
 
                 if (!string.IsNullOrEmpty(filtros.Caja))
                     query += " AND he_Caja = @Caja";
@@ -73,10 +73,10 @@ namespace MenuReporteria.Services
                         command.Parameters.AddWithValue("@ValorHasta", filtros.ValorHasta.Value);
                     if (!string.IsNullOrEmpty(filtros.Ncf))
                         command.Parameters.AddWithValue("@Ncf", filtros.Ncf);
-                    if (filtros.FacturaDesde.HasValue)
-                        command.Parameters.AddWithValue("@FacturaDesde", filtros.FacturaDesde.Value);
-                    if (filtros.FacturaHasta.HasValue)
-                        command.Parameters.AddWithValue("@FacturaHasta", filtros.FacturaHasta.Value);
+                    if (!string.IsNullOrEmpty(filtros.FacturaDesde))
+                        command.Parameters.AddWithValue("@FacturaDesde", filtros.FacturaDesde);
+                    //if (filtros.FacturaHasta.HasValue)
+                    //    command.Parameters.AddWithValue("@FacturaHasta", filtros.FacturaHasta.Value);
                     if (!string.IsNullOrEmpty(filtros.Caja))
                         command.Parameters.AddWithValue("@Caja", filtros.Caja);
 
