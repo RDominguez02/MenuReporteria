@@ -1,0 +1,604 @@
+﻿@model ResultadoReporteVentas
+
+@{
+    ViewData["Title"] = "Reporte de Ventas";
+}
+
+<link rel="stylesheet" href="~/css/reporte.css" />
+
+<div class="reporte-container">
+    <!-- Header -->
+    <!-- Header -->
+    <div class="reporte-header">
+        <div class="reporte-header-left">
+            <div class="reporte-header-icon">💰</div>
+            <h1>Reporte de Ventas</h1>
+        </div>
+
+        <!-- Resumen en el Header -->
+        <div class="header-summary">
+            <div class="header-summary-item">
+                <div class="header-summary-label">Total Facturas</div>
+                <div class="header-summary-value" id="totalFacturas">@(Model?.TotalFacturas ?? 0)</div>
+            </div>
+            <div class="header-summary-item">
+                <div class="header-summary-label">Total Chasis</div>
+                <div class="header-summary-value" id="totalChasis">@(Model?.TotalChasis ?? 0)</div>
+            </div>
+            <div class="header-summary-item">
+                <div class="header-summary-label">Valor Total</div>
+                <div class="header-summary-value" id="valorTotal">RD$ @((Model?.ValorTotal ?? 0).ToString("N2"))</div>
+            </div>
+        </div>
+
+        <!-- Botones en el Header -->
+        <div class="header-actions">
+            <button type="button" class="btn-toggle-filters" onclick="toggleFiltros()">
+                <span id="toggleIcon">🔽</span> Desplegar filtros
+            </button>
+            <button type="button" class="btn-action btn-aceptar" onclick="generarReporte()">
+                ✓ Filtrar
+            </button>
+            <button type="button" class="btn-action btn-imprimir" onclick="imprimirReporte()">
+                🖨️ Imprimir
+            </button>
+            <button type="button" class="btn-action btn-exportar" onclick="exportarReporte()">
+                📥 Exportar
+            </button>
+            <button type="button" class="btn-action btn-retornar" onclick="window.location.href='@Url.Action("Index", "Home")'">
+                ← Retornar
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <form id="filtrosForm" class="filters-section" method="post" action="@Url.Action("Generar", "Ventas")">
+        <div class="filters-title">Filtros de Búsqueda</div>
+
+        <div class="filters-grid">
+            <!-- Fecha Desde -->
+            <div class="filter-group">
+                <label>Desde la Fecha</label>
+                <input type="date" name="fechaDesde" value="@Model?.Filtros?.FechaDesde.ToString("yyyy-MM-dd")" required>
+            </div>
+
+            <!-- Fecha Hasta -->
+            <div class="filter-group">
+                <label>Hasta la Fecha</label>
+                <input type="date" name="fechaHasta" value="@Model?.Filtros?.FechaHasta.ToString("yyyy-MM-dd")" required>
+            </div>
+
+            <!-- Entrada Libre -->
+            <div class="filter-group">
+                <label>Entrada Libre</label>
+                <select>
+                    <option>Seleccionar...</option>
+                    <option>Opción 1</option>
+                    <option>Opción 2</option>
+                </select>
+            </div>
+
+            <!-- Cliente -->
+            <div class="filter-group">
+                <label>Cliente</label>
+                <input type="text" name="cliente" placeholder="Nombre del cliente..." value="@Model?.Filtros?.Cliente">
+            </div>
+
+            <!-- Vendedor -->
+            <div class="filter-group">
+                <label>Vendedor</label>
+                <select name="vendedor">
+                    <option value="">-- Seleccionar --</option>
+                    @if (Model?.Filtros?.VendedoresDisponibles != null)
+                    {
+                        @foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
+                        {
+                            @* <option value="@vendedor" @(Model.Filtros.Vendedor == vendedor ? "selected" : "")>@vendedor</option> *@
+                            <option value="@vendedor" selected="@(Model.Filtros.Vendedor == vendedor ? "selected" : null)">
+                                @vendedor
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Valor Desde -->
+            <div class="filter-group">
+                <label>Valor Desde</label>
+                <input type="number" name="valorDesde" step="0.01" placeholder="0.00" value="@Model?.Filtros?.ValorDesde">
+            </div>
+
+            <!-- Valor Hasta -->
+            <div class="filter-group">
+                <label>Valor Hasta</label>
+                <input type="number" name="valorHasta" step="0.01" placeholder="0.00" value="@Model?.Filtros?.ValorHasta">
+            </div>
+
+            <!-- NCF -->
+            <div class="filter-group">
+                <label>NCF</label>
+                <input type="text" name="ncf" placeholder="Buscar por NCF..." value="@Model?.Filtros?.Ncf">
+            </div>
+
+            <!-- Factura Desde -->
+            <div class="filter-group">
+                <label>Factura </label>
+                <input type="text" name="facturaDesde" placeholder="0" value="@Model?.Filtros?.FacturaDesde">
+            </div>
+
+@*             <!-- Factura Hasta -->
+            <div class="filter-group">
+                <label>Factura Hasta</label>
+                <input type="text" name="facturaHasta" placeholder="0" value="@Model?.Filtros?.FacturaHasta">
+            </div>
+ *@
+            <!-- Caja -->
+            <div class="filter-group">
+                <label>Caja</label>
+                <select name="caja">
+                    <option value="">-- Todas --</option>
+                    @if (Model?.Filtros?.CajasDisponibles != null)
+                    {
+                        @foreach (var caja in Model.Filtros.CajasDisponibles)
+                        {
+                            <option value="@caja" selected="@(Model.Filtros.Caja == caja ? "selected" : null)">@caja</option>
+
+
+                        }
+                    }
+                </select>
+            </div>
+            <!-- Moneda -->
+            <div class="filter-group">
+                <label>Moneda</label>
+                <select name="Moneda">
+                    <option value="">-- Todas --</option>
+                    @if (Model?.Filtros?.MonedasDisponibles != null)
+                    {
+                        @foreach (var moneda in Model.Filtros.MonedasDisponibles)
+                        {
+                            <option value="@moneda" selected="@(Model.Filtros.Moneda == moneda ? "selected" : null)">@moneda</option>
+
+
+                        }
+                    }
+                </select>
+            </div>
+            <!-- Sucursal -->
+            <div class="filter-group">
+                <label>Sucursal</label>
+                <select name="Sucursal">
+                    <option value="">-- Todas --</option>
+                    @if (Model?.Filtros?.SucursalesDisponibles != null)
+                    {
+                        @foreach (var sucursal in Model.Filtros.SucursalesDisponibles)
+                        {
+                            <option value="@sucursal" selected="@(Model.Filtros.Sucursal == sucursal ? "selected" : null)">@sucursal</option>
+
+
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Separador -->
+            <div class="filter-separator"></div>
+
+            <!-- Tipo de Factura -->
+            <div class="report-type-group">
+                <h4>Tipo de Factura</h4>
+                <div class="report-type-options">
+                    <label><input type="radio" name="tipoFactura" value="Contado"> Contado</label>
+                    <label><input type="radio" name="tipoFactura" value="Crédito"> Crédito</label>
+                    <label><input type="radio" name="tipoFactura" value="Todas" checked> Todas</label>
+
+                </div>
+            </div>
+
+            <!-- Ordenado Por -->
+            <div class="report-type-group">
+                <h4>Ordenado Por</h4>
+                <div class="report-type-options">
+                    <label><input type="radio" name="ordenadoPor" value="FECHA_FACTURA" checked> FECHA + FACTURA</label>
+                    <label><input type="radio" name="ordenadoPor" value="FACTURA"> FACTURA</label>
+
+                </div>
+            </div>
+
+            <!-- Modo de Facturas -->
+            <div class="report-type-group">
+                <h4>Modo de Facturas</h4>
+                <div class="report-type-options">
+                    <label><input type="radio" name="modoFacturas" value="Mayor"> Al x Mayor</label>
+                    <label><input type="radio" name="modoFacturas" value="Detalle"> Al Detalle</label>
+                    <label><input type="radio" name="modoFacturas" value="Todas" checked> Todas</label>
+
+                </div>
+            </div>
+
+            <!-- Modo de Facturas -->
+            <div class="report-type-group">
+                <h4>Opciones</h4>
+                <div class="report-type-options">
+                    <label><input type="radio" name="opciones" value="Normales">Normales / Venta Fichas / Inventario</label>
+                    <label><input type="radio" name="opciones" value="SoloNCF">Facturas solo NCF / Cierre Mes</label>
+                    <label><input type="radio" name="opciones" value="Editadas"> Facturas Editadas</label>
+                    <label><input type="radio" name="opciones" value="Repuestos">Facturas de Repuestos</label>
+                    <label><input type="radio" name="opciones" value="Placa">Facturas de Placa</label>
+                    <label><input type="radio" name="opciones" value="Todas" checked>Todas</label>
+                    <label><input type="radio" name="opciones" value="Archivo">Reporte para archivo</label>
+                </div>
+            </div>
+
+        </div>
+    </form>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Cargando datos...</p>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            <div class="records-per-page">
+                <label>Registros por página:</label>
+                <select id="recordsPerPage" onchange="cambiarRegistrosPorPagina()">
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="pagination-text">
+                Mostrando <strong id="rangoInicio">0</strong> a <strong id="rangoFin">0</strong> de <strong id="totalRegistros">0</strong> registros
+            </div>
+        </div>
+        <div class="pagination-controls" id="paginationControls">
+            <!-- Los botones de paginación se generarán dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Tabla de Resultados -->
+    <div id="tablaResultados" class="table-container">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Factura</th>
+                    <th>NCF</th>
+                    <th>Cliente</th>
+                    <th>Vendedor</th>
+                    <th>Caja</th>
+                    <th>Turno</th>
+                    <th>Monto Bruto</th>
+                    <th>ITBis</th>
+                    <th>CIF</th>
+                    <th>Monto Neto</th>
+                    <th>Moneda</th>
+                    <th>Tasa</th>
+                    <th>Total Real</th>
+                    <th>Total Chasis</th>
+                    <th>Ver Factura</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Ventas != null && Model.Ventas.Count > 0)
+                {
+                    @foreach (var venta in Model.Ventas)
+                    {
+                        <tr>
+                            <td>@venta.Fecha.ToString("dd/MM/yyyy")</td>
+                            <td>@venta.Factura</td>
+                            <td>@venta.Ncf</td>
+                            <td>@venta.Cliente</td>
+                            <td>@venta.Vendedor</td>
+                            <td>@venta.Caja</td>
+                            <td>@venta.Turno</td>
+                            <td style="text-align: right;">@venta.MontoBruto.ToString("N2")</td>
+                            <td style="text-align: right;">@venta.Itbis.ToString("N2")</td>
+                            <td style="text-align: right;">@venta.CIF.ToString("N2")</td>
+                            <td style="text-align: right;">@venta.MontoNeto.ToString("N2")</td>
+                            <td>@venta.Moneda</td>
+                            <td style="text-align: right;">@venta.Tasa.ToString("N2")</td>
+                            <td style="text-align: right;">@venta.TotalR.ToString("N2")</td>
+                            <td style="text-align: right;">@venta.TotalChasis.ToString("N2")</td>
+                            <td style="text-align: right;">👁</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">No hay datos para mostrar</div>
+                            <small>Ajusta los filtros y haz clic en "Aceptar" para cargar los datos</small>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Resumen -->
+@*     <div class="table-footer">
+        <div class="summary-item">
+            <div class="summary-item-label">Total de Facturas</div>
+            <div class="summary-item-value" id="totalFacturas">@(Model?.TotalFacturas ?? 0)</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-item-label">Total de Chasis</div>
+            <div class="summary-item-value" id="totalChasis">@(Model?.TotalChasis ?? 0)</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-item-label">Valor Total</div>
+            <div class="summary-item-value" id="valorTotal">RD$ @((Model?.ValorTotal ?? 0).ToString("N2"))</div>
+        </div>
+    </div> *@
+
+@*     <!-- Botones de Acción -->
+    <div class="actions-group">
+        <button type="button" class="btn-action btn-aceptar" onclick="generarReporte()">
+            ✓ Aceptar
+        </button>
+        <button type="button" class="btn-action btn-imprimir" onclick="imprimirReporte()">
+            🖨️ Imprimir
+        </button>
+        <button type="button" class="btn-action btn-exportar" onclick="exportarReporte()">
+            📥 Exportar
+        </button>
+        <button type="button" class="btn-action btn-retornar" onclick="window.location.href='@Url.Action("Index", "Home")'">
+            ← Retornar
+        </button>
+    </div>
+</div> *@
+
+@section Scripts {
+        <script>
+            // Variables de paginación
+            let todosLosRegistros = [];
+            let paginaActual = 1;
+            let registrosPorPagina = 20;
+
+            // Toggle filtros
+            function toggleFiltros() {
+                const filtros = document.getElementById('filtrosForm');
+                const icon = document.getElementById('toggleIcon');
+
+                if (filtros.classList.contains('hidden')) {
+                    filtros.classList.remove('hidden');
+                    icon.textContent = '🔽';
+                } else {
+                    filtros.classList.add('hidden');
+                    icon.textContent = '▶️';
+                }
+            }
+
+            // Generar reporte
+            function generarReporte() {
+                const form = document.getElementById('filtrosForm');
+                const formData = new FormData(form);
+
+                // Ocultar filtros después de generar
+                const filtros = document.getElementById('filtrosForm');
+                const icon = document.getElementById('toggleIcon');
+                filtros.classList.add('hidden');
+                icon.textContent = '▶️';
+
+                // Reiniciar paginación
+                paginaActual = 1;
+
+                // Mostrar spinner
+                document.getElementById('loadingSpinner').style.display = 'block';
+                document.getElementById('tablaResultados').style.display = 'none';
+
+                // Enviar formulario
+                fetch('@Url.Action("Generar", "Ventas")', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Guardar todos los registros
+                        todosLosRegistros = data.data.ventas || [];
+                        actualizarResumen(data);
+                        mostrarPagina(1);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+
+                    // Ocultar spinner
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    document.getElementById('tablaResultados').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar los datos');
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    document.getElementById('tablaResultados').style.display = 'block';
+                });
+            }
+
+            // Cambiar registros por página
+            function cambiarRegistrosPorPagina() {
+                registrosPorPagina = parseInt(document.getElementById('recordsPerPage').value);
+                paginaActual = 1;
+                mostrarPagina(1);
+            }
+
+            // Mostrar página específica
+            function mostrarPagina(pagina) {
+                paginaActual = pagina;
+
+                const inicio = (pagina - 1) * registrosPorPagina;
+                const fin = inicio + registrosPorPagina;
+                const registrosPagina = todosLosRegistros.slice(inicio, fin);
+
+                actualizarTabla(registrosPagina);
+                actualizarInfoPaginacion(inicio, fin);
+                generarBotonesPaginacion();
+            }
+
+            // Actualizar información de paginación
+            function actualizarInfoPaginacion(inicio, fin) {
+                const total = todosLosRegistros.length;
+                document.getElementById('rangoInicio').textContent = total > 0 ? inicio + 1 : 0;
+                document.getElementById('rangoFin').textContent = Math.min(fin, total);
+                document.getElementById('totalRegistros').textContent = total;
+            }
+
+            // Generar botones de paginación
+            function generarBotonesPaginacion() {
+                const totalPaginas = Math.ceil(todosLosRegistros.length / registrosPorPagina);
+                const contenedor = document.getElementById('paginationControls');
+
+                let html = '';
+
+                // Botón anterior
+                html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual - 1})" ${paginaActual === 1 ? 'disabled' : ''}>
+                    ← Anterior
+                </button>`;
+
+                // Lógica para mostrar números de página
+                const maxBotones = 5;
+                let inicioPagina = Math.max(1, paginaActual - 2);
+                let finPagina = Math.min(totalPaginas, inicioPagina + maxBotones - 1);
+
+                if (finPagina - inicioPagina < maxBotones - 1) {
+                    inicioPagina = Math.max(1, finPagina - maxBotones + 1);
+                }
+
+                // Primera página
+                if (inicioPagina > 1) {
+                    html += `<button class="pagination-btn" onclick="mostrarPagina(1)">1</button>`;
+                    if (inicioPagina > 2) {
+                        html += `<span class="pagination-ellipsis">...</span>`;
+                    }
+                }
+
+                // Páginas numeradas
+                for (let i = inicioPagina; i <= finPagina; i++) {
+                    html += `<button class="pagination-btn ${i === paginaActual ? 'active' : ''}" onclick="mostrarPagina(${i})">${i}</button>`;
+                }
+
+                // Última página
+                if (finPagina < totalPaginas) {
+                    if (finPagina < totalPaginas - 1) {
+                        html += `<span class="pagination-ellipsis">...</span>`;
+                    }
+                    html += `<button class="pagination-btn" onclick="mostrarPagina(${totalPaginas})">${totalPaginas}</button>`;
+                }
+
+                // Botón siguiente
+                html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual + 1})" ${paginaActual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''}>
+                    Siguiente →
+                </button>`;
+
+                contenedor.innerHTML = html;
+            }
+
+            // Actualizar tabla con datos
+            function actualizarTabla(ventas) {
+                const tbody = document.querySelector('.results-table tbody');
+
+                if (ventas && ventas.length > 0) {
+                    let html = '';
+                    ventas.forEach(venta => {
+                        const fecha = new Date(venta.fecha);
+                        const fechaFormateada = fecha.toLocaleDateString('es-DO');
+
+                        html += `
+                            <tr>
+                                <td>${fechaFormateada}</td>
+                                <td>${venta.factura}</td>
+                                <td>${venta.ncf || ''}</td>
+                                <td>${venta.cliente}</td>
+                                <td>${venta.vendedor || ''}</td>
+                                <td>${venta.caja}</td>
+                                <td>${venta.turno}</td>
+                                <td style="text-align: right;">${parseFloat(venta.montoBruto).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td style="text-align: right;">${parseFloat(venta.itbis).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td style="text-align: right;">${parseFloat(venta.cif).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td style="text-align: right;">${parseFloat(venta.montoNeto).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td>${venta.moneda}</td>
+                                <td style="text-align: right;">${parseFloat(venta.tasa).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td style="text-align: right;">${parseFloat(venta.totalR).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td style="text-align: right;">${parseFloat(venta.totalChasis).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                           
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="empty-state">
+                                <div class="empty-state-icon">📊</div>
+                                <div class="empty-state-text">No se encontraron resultados</div>
+                                <small>Intenta ajustar los filtros de búsqueda</small>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+
+            // Actualizar resumen (ahora en el header)
+            function actualizarResumen(data) {
+                document.getElementById('totalFacturas').textContent = data.totalFacturas;
+                document.getElementById('totalChasis').textContent = data.totalChasis;
+                document.getElementById('valorTotal').textContent = 'RD$ ' + data.valorTotal;
+            }
+
+            // Imprimir reporte
+            function imprimirReporte() {
+                window.print();
+            }
+
+            // Exportar reporte
+            function exportarReporte() {
+                const form = document.getElementById('filtrosForm');
+                const formData = new FormData(form);
+
+                fetch('@Url.Action("Exportar", "Ventas")', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Exportación completada');
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al exportar');
+                });
+            }
+
+            // Cargar datos al presionar Enter en los campos
+            document.querySelectorAll('.filter-group input, .filter-group select').forEach(element => {
+                element.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        generarReporte();
+                    }
+                });
+            });
+
+            // Inicializar paginación si hay datos al cargar
+            @if (Model?.Ventas != null && Model.Ventas.Count > 0)
+            {
+                    <text>
+                    todosLosRegistros = @Html.Raw(Json.Serialize(Model.Ventas));
+                    mostrarPagina(1);
+                    </text>
+            }
+        </script>
+}
