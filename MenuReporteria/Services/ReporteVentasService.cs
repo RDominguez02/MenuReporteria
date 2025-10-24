@@ -251,5 +251,235 @@ namespace MenuReporteria.Services
 
             return ventas;
         }
+        // Agregar este método a la clase ReporteVentasService
+
+        /// <summary>
+        /// Obtiene el detalle completo de una factura incluyendo encabezado, cliente, productos y chasis
+        /// </summary>
+        public DetalleFacturaViewModel ObtenerDetalleFactura(string numeroFactura)
+        {
+            var detalle = new DetalleFacturaViewModel();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                // 1. OBTENER DATOS DEL ENCABEZADO (IVBDHEPE)
+                var queryEncabezado = @"
+            SELECT TOP 1
+                he_factura, he_fecha, he_ncf, he_usuario, he_turno, 
+                he_orden as ultimoControl, he_Caja, ve_codigo,
+                cl_codigo, he_nombre, he_rnc, he_direc1, he_telef,
+                he_monto, he_itbis, he_itbis18, he_valdesc, 
+                he_neto, he_itbis08
+            FROM IVBDHEPE
+            WHERE he_factura = @Factura
+        ";
+
+                using (var cmdEncabezado = new SqlCommand(queryEncabezado, connection))
+                {
+                    cmdEncabezado.Parameters.AddWithValue("@Factura", numeroFactura);
+
+                    using (var reader = cmdEncabezado.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            // Información General
+                            detalle.Factura = reader["he_factura"]?.ToString() ?? "";
+                            detalle.Fecha = reader["he_fecha"] != DBNull.Value
+                                ? Convert.ToDateTime(reader["he_fecha"])
+                                : DateTime.Now;
+                            detalle.Ncf = reader["he_ncf"]?.ToString() ?? "";
+                            detalle.Usuario = reader["he_usuario"]?.ToString() ?? "";
+                            detalle.Turno = reader["he_turno"] != DBNull.Value
+                                ? Convert.ToInt32(reader["he_turno"])
+                                : 0;
+                            detalle.UltimoControl = reader["ultimoControl"]?.ToString() ?? "";
+                            detalle.Caja = reader["he_Caja"]?.ToString() ?? "";
+                            detalle.Vendedor = reader["ve_codigo"]?.ToString() ?? "";
+
+                            // Información del Cliente
+                            detalle.ClienteCodigo = reader["cl_codigo"]?.ToString() ?? "";
+                            detalle.ClienteNombre = reader["he_nombre"]?.ToString() ?? "";
+                            detalle.ClienteRnc = reader["he_rnc"]?.ToString() ?? "";
+                            detalle.ClienteDireccion = reader["he_direc1"]?.ToString() ?? "";
+                            detalle.ClienteTelefono = reader["he_telef"]?.ToString() ?? "";
+
+                            // Totales
+                            detalle.MontoBruto = reader["he_monto"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["he_monto"])
+                                : 0;
+                            detalle.Impuesto17 = reader["he_itbis"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["he_itbis"])
+                                : 0;
+                            detalle.Itbis18 = reader["he_itbis18"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["he_itbis18"])
+                                : 0;
+                            detalle.Descuento = reader["he_valdesc"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["he_valdesc"])
+                                : 0;
+                            detalle.MontoNeto = reader["he_neto"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["he_neto"])
+                                : 0;
+                            detalle.TotalItbis = (detalle.Impuesto17 + detalle.Itbis18);
+                            detalle.Subtotal = detalle.MontoNeto - detalle.TotalItbis;
+                        }
+                    }
+                }
+
+                // 2. OBTENER PRODUCTOS Y DATOS DE CHASIS (IVBDDEPE + IVBDVEHICULO)
+                var queryProductos = @"
+            SELECT 
+                A.DE_CANTID,
+                A.DE_UNIDAD,
+                A.AR_CODIGO,
+                A.DE_DESCRI,
+                A.DE_PRECIO,
+                A.DE_ITBIS18,
+                A.DE_ITBIS08,
+                (A.DE_CANTID * A.DE_PRECIO) as Total,
+                A.ar_chasis,
+                A.ar_ano,
+                A.ar_motor,
+                A.ar_modelo,
+                A.ar_color,
+                A.ar_placa,
+                A.ar_matri,
+                ISNULL(B.AR_DESCRI, '') as AR_DESCRI
+            FROM IVBDDEPE A
+            LEFT JOIN orlando.dbo.IVBDVEHICULO B ON A.AR_CODIGO = B.AR_CODIGO
+            WHERE A.DE_FACTURA = @Factura
+            ORDER BY A.de_id
+        ";
+
+                using (var cmdProductos = new SqlCommand(queryProductos, connection))
+                {
+                    cmdProductos.Parameters.AddWithValue("@Factura", numeroFactura);
+
+                    using (var reader = cmdProductos.ExecuteReader())
+                    {
+                        bool primerProducto = true;
+
+                        while (reader.Read())
+                        {
+                            // Agregar producto a la lista
+                            var producto = new ProductoFacturaItem
+                            {
+                                CodigoFicha = reader["AR_CODIGO"]?.ToString() ?? "",
+                                Cantidad = reader["DE_CANTID"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["DE_CANTID"])
+                                    : 0,
+                                UnidadMedida = reader["DE_UNIDAD"]?.ToString() ?? "UD",
+                                Descripcion = reader["DE_DESCRI"]?.ToString() ??
+                                             reader["AR_DESCRI"]?.ToString() ?? "",
+                                PrecioUnitario = reader["DE_PRECIO"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["DE_PRECIO"])
+                                    : 0,
+                                Itbis = reader["DE_ITBIS18"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["DE_ITBIS18"])
+                                    : (reader["DE_ITBIS08"] != DBNull.Value
+                                        ? Convert.ToDecimal(reader["DE_ITBIS08"])
+                                        : 0),
+                                Total = reader["Total"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["Total"])
+                                    : 0
+                            };
+
+                            detalle.Productos.Add(producto);
+
+                            // Si es el primer producto con datos de chasis, llenar esa información
+                            // (puedes modificar esto si quieres mostrar múltiples chasis)
+                            if (primerProducto)
+                            {
+                                var chasis = reader["ar_chasis"]?.ToString();
+                                if (!string.IsNullOrEmpty(chasis))
+                                {
+                                    detalle.Chasis = chasis;
+                                    detalle.Ano = reader["ar_ano"]?.ToString() ?? "";
+                                    detalle.Motor = reader["ar_motor"]?.ToString() ?? "";
+                                    detalle.Modelo = reader["ar_modelo"]?.ToString() ?? "";
+                                    detalle.Color = reader["ar_color"]?.ToString() ?? "";
+                                    detalle.Placa = reader["ar_placa"]?.ToString() ?? "";
+                                    detalle.Matricula = reader["ar_matri"]?.ToString() ?? "";
+                                    primerProducto = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return detalle;
+        }
+
+        /// <summary>
+        /// Obtiene todos los chasis asociados a una factura (para mostrar múltiples si existen)
+        /// </summary>
+        public List<ChasisInfo> ObtenerChasisPorFactura(string numeroFactura)
+        {
+            var chasisList = new List<ChasisInfo>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                var query = @"
+            SELECT DISTINCT
+                ar_chasis,
+                ar_ano,
+                ar_motor,
+                ar_modelo,
+                ar_color,
+                ar_placa,
+                ar_matri,
+                AR_CODIGO,
+                DE_DESCRI
+            FROM IVBDDEPE
+            WHERE DE_FACTURA = @Factura
+              AND ar_chasis IS NOT NULL
+              AND ar_chasis <> ''
+            ORDER BY de_id
+        ";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Factura", numeroFactura);
+                    connection.Open();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            chasisList.Add(new ChasisInfo
+                            {
+                                Chasis = reader["ar_chasis"]?.ToString() ?? "",
+                                Ano = reader["ar_ano"]?.ToString() ?? "",
+                                Motor = reader["ar_motor"]?.ToString() ?? "",
+                                Modelo = reader["ar_modelo"]?.ToString() ?? "",
+                                Color = reader["ar_color"]?.ToString() ?? "",
+                                Placa = reader["ar_placa"]?.ToString() ?? "",
+                                Matricula = reader["ar_matri"]?.ToString() ?? "",
+                                CodigoArticulo = reader["AR_CODIGO"]?.ToString() ?? "",
+                                Descripcion = reader["DE_DESCRI"]?.ToString() ?? ""
+                            });
+                        }
+                    }
+                }
+            }
+
+            return chasisList;
+        }
+
+        // Clase auxiliar para múltiples chasis
+        public class ChasisInfo
+        {
+            public string Chasis { get; set; }
+            public string Ano { get; set; }
+            public string Motor { get; set; }
+            public string Modelo { get; set; }
+            public string Color { get; set; }
+            public string Placa { get; set; }
+            public string Matricula { get; set; }
+            public string CodigoArticulo { get; set; }
+            public string Descripcion { get; set; }
+        }
     }
 }

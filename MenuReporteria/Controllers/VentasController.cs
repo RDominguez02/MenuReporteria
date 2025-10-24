@@ -87,57 +87,32 @@ public class VentasController : Controller
     }
 
     [HttpGet]
+    [HttpGet]
     public IActionResult ObtenerDetalleFactura(string factura)
     {
         try
         {
-            // Por ahora devolvemos datos de prueba
-            // Luego conectaremos con el servicio real
-            var detalle = new DetalleFacturaViewModel
-            {
-                Factura = factura,
-                Fecha = DateTime.Now,
-                Ncf = "B0100000001",
-                Usuario = "ADMIN",
-                Turno = 1,
-                UltimoControl = "5806",
-                Caja = "C",
-                Vendedor = "VE001",
+            // Obtener el detalle real desde la base de datos
+            var detalle = _reporteService.ObtenerDetalleFactura(factura);
 
-                ClienteCodigo = "CL1-01",
-                ClienteNombre = "COMERCIAL LA ISABELA SRL",
-                ClienteRnc = "131-12345-6",
-                ClienteDireccion = "PADRE CASTELLANOS #61 ENSANCHE ESPAILLAT",
-                ClienteTelefono = "809-123-4567",
-
-                Productos = new List<ProductoFacturaItem>
+            if (detalle == null || string.IsNullOrEmpty(detalle.Factura))
             {
-                new ProductoFacturaItem
+                return Json(new
                 {
-                    CodigoFicha = "LZRKTF00BS1010183",
-                    Cantidad = 1,
-                    UnidadMedida = "UD",
-                    Descripcion = "TAURO LEAD 125 BLANCO 2025",
-                    PrecioUnitario = 1090.00m,
-                    Itbis = 152.20m,
-                    Total = 1090.00m
-                }
-            },
-
-                MontoBruto = 22894.02m,
-                Impuesto17 = 2385.05m,
-                Itbis18 = 4120.93m,
-                Descuento = 0.00m,
-                Subtotal = 0.00m,
-                TotalItbis = 4120.93m,
-                MontoNeto = 29400.00m
-            };
+                    success = false,
+                    message = "No se encontró la factura especificada"
+                });
+            }
 
             return Json(new { success = true, data = detalle });
         }
         catch (Exception ex)
         {
-            return Json(new { success = false, message = ex.Message });
+            return Json(new
+            {
+                success = false,
+                message = $"Error al obtener el detalle: {ex.Message}"
+            });
         }
     }
 
@@ -152,5 +127,19 @@ public class VentasController : Controller
         };
 
         return PartialView("_ModalDetalleFactura", model);
+    }
+
+    [HttpGet]
+    public IActionResult ObtenerChasisFactura(string factura)
+    {
+        try
+        {
+            var chasis = _reporteService.ObtenerChasisPorFactura(factura);
+            return Json(new { success = true, data = chasis });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
     }
 }
