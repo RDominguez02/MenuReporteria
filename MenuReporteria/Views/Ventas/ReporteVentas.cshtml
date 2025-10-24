@@ -5,6 +5,7 @@
 }
 
 <link rel="stylesheet" href="~/css/reporte.css" />
+<link rel="stylesheet" href="~/css/modal-factura.css" />
 
 <div class="reporte-container">
     <!-- Header -->
@@ -49,6 +50,7 @@
                 ← Retornar
             </button>
         </div>
+
     </div>
 
     <!-- Filtros -->
@@ -303,7 +305,11 @@
                             <td style="text-align: right;">@venta.Tasa.ToString("N2")</td>
                             <td style="text-align: right;">@venta.TotalR.ToString("N2")</td>
                             <td style="text-align: right;">@venta.TotalChasis.ToString("N2")</td>
-                            <td style="text-align: right;">👁</td>
+                            <td style="text-align: center;">
+                                <button class="btn-ver-factura" onclick="abrirModalFactura('@venta.Factura')">
+                                    👁️ Ver
+                                </button>
+                            </td>
                         </tr>
                     }
                 }
@@ -319,40 +325,11 @@
                 }
             </tbody>
         </table>
+
     </div>
 
-    <!-- Resumen -->
-@*     <div class="table-footer">
-        <div class="summary-item">
-            <div class="summary-item-label">Total de Facturas</div>
-            <div class="summary-item-value" id="totalFacturas">@(Model?.TotalFacturas ?? 0)</div>
-        </div>
-        <div class="summary-item">
-            <div class="summary-item-label">Total de Chasis</div>
-            <div class="summary-item-value" id="totalChasis">@(Model?.TotalChasis ?? 0)</div>
-        </div>
-        <div class="summary-item">
-            <div class="summary-item-label">Valor Total</div>
-            <div class="summary-item-value" id="valorTotal">RD$ @((Model?.ValorTotal ?? 0).ToString("N2"))</div>
-        </div>
-    </div> *@
-
-@*     <!-- Botones de Acción -->
-    <div class="actions-group">
-        <button type="button" class="btn-action btn-aceptar" onclick="generarReporte()">
-            ✓ Aceptar
-        </button>
-        <button type="button" class="btn-action btn-imprimir" onclick="imprimirReporte()">
-            🖨️ Imprimir
-        </button>
-        <button type="button" class="btn-action btn-exportar" onclick="exportarReporte()">
-            📥 Exportar
-        </button>
-        <button type="button" class="btn-action btn-retornar" onclick="window.location.href='@Url.Action("Index", "Home")'">
-            ← Retornar
-        </button>
-    </div>
-</div> *@
+    <!-- El modal se carga dinámicamente desde _ModalDetalleFactura.cshtml -->
+    <div id="modalFactura" class="modal-factura"></div>
 
 @section Scripts {
         <script>
@@ -529,7 +506,9 @@
                                 <td style="text-align: right;">${parseFloat(venta.tasa).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                 <td style="text-align: right;">${parseFloat(venta.totalR).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                 <td style="text-align: right;">${parseFloat(venta.totalChasis).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                           
+                                <td style="text-align:center;">
+                                    <button class="btn-ver-factura" onclick="abrirModalFactura('${venta.factura}')">👁️ Ver</button>
+                                </td>
                             </tr>
                         `;
                     });
@@ -537,7 +516,7 @@
                 } else {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="9" class="empty-state">
+                            <td colspan="16" class="empty-state">
                                 <div class="empty-state-icon">📊</div>
                                 <div class="empty-state-text">No se encontraron resultados</div>
                                 <small>Intenta ajustar los filtros de búsqueda</small>
@@ -600,5 +579,7 @@
                     mostrarPagina(1);
                     </text>
             }
+
         </script>
+        <script src="~/js/modal-factura.js"></script>
 }

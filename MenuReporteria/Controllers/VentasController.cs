@@ -85,4 +85,72 @@ public class VentasController : Controller
             return View("ReporteVentas");
         }
     }
+
+    [HttpGet]
+    public IActionResult ObtenerDetalleFactura(string factura)
+    {
+        try
+        {
+            // Por ahora devolvemos datos de prueba
+            // Luego conectaremos con el servicio real
+            var detalle = new DetalleFacturaViewModel
+            {
+                Factura = factura,
+                Fecha = DateTime.Now,
+                Ncf = "B0100000001",
+                Usuario = "ADMIN",
+                Turno = 1,
+                UltimoControl = "5806",
+                Caja = "C",
+                Vendedor = "VE001",
+
+                ClienteCodigo = "CL1-01",
+                ClienteNombre = "COMERCIAL LA ISABELA SRL",
+                ClienteRnc = "131-12345-6",
+                ClienteDireccion = "PADRE CASTELLANOS #61 ENSANCHE ESPAILLAT",
+                ClienteTelefono = "809-123-4567",
+
+                Productos = new List<ProductoFacturaItem>
+            {
+                new ProductoFacturaItem
+                {
+                    CodigoFicha = "LZRKTF00BS1010183",
+                    Cantidad = 1,
+                    UnidadMedida = "UD",
+                    Descripcion = "TAURO LEAD 125 BLANCO 2025",
+                    PrecioUnitario = 1090.00m,
+                    Itbis = 152.20m,
+                    Total = 1090.00m
+                }
+            },
+
+                MontoBruto = 22894.02m,
+                Impuesto17 = 2385.05m,
+                Itbis18 = 4120.93m,
+                Descuento = 0.00m,
+                Subtotal = 0.00m,
+                TotalItbis = 4120.93m,
+                MontoNeto = 29400.00m
+            };
+
+            return Json(new { success = true, data = detalle });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    public IActionResult CargarModalDetalleFactura(string factura)
+    {
+        // Puedes pasar un modelo con datos mínimos (mock) al partial
+        var model = new DetalleFacturaViewModel
+        {
+            Factura = factura,
+            // deja los demás campos vacíos; el JS (cargarDetalleFactura) los completará
+        };
+
+        return PartialView("_ModalDetalleFactura", model);
+    }
 }
