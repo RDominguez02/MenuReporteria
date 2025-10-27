@@ -26,7 +26,7 @@ namespace MenuReporteria.Models
         public string ClienteDireccion { get; set; }
         public string ClienteTelefono { get; set; }
 
-        // Datos del Chasis
+        // Datos del Chasis (primer chasis o seleccionado)
         public string Chasis { get; set; }
         public string Ano { get; set; }
         public string Motor { get; set; }
@@ -49,7 +49,7 @@ namespace MenuReporteria.Models
     }
 
     /// <summary>
-    /// Modelo para un producto dentro de la factura
+    /// Modelo para un producto dentro de la factura (ahora incluye datos del chasis)
     /// </summary>
     public class ProductoFacturaItem
     {
@@ -60,5 +60,14 @@ namespace MenuReporteria.Models
         public decimal PrecioUnitario { get; set; }
         public decimal Itbis { get; set; }
         public decimal Total { get; set; }
+
+        // Datos del chasis (si el producto tiene uno asociado)
+        public string Chasis { get; set; }
+        public string Ano { get; set; }
+        public string Motor { get; set; }
+        public string Modelo { get; set; }
+        public string Color { get; set; }
+        public string Placa { get; set; }
+        public string Matricula { get; set; }
     }
 }

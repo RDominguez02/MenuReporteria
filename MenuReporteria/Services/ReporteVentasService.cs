@@ -362,7 +362,7 @@ namespace MenuReporteria.Services
 
                         while (reader.Read())
                         {
-                            // Agregar producto a la lista
+                            // Agregar producto a la lista con sus datos de chasis
                             var producto = new ProductoFacturaItem
                             {
                                 CodigoFicha = reader["AR_CODIGO"]?.ToString() ?? "",
@@ -382,13 +382,20 @@ namespace MenuReporteria.Services
                                         : 0),
                                 Total = reader["Total"] != DBNull.Value
                                     ? Convert.ToDecimal(reader["Total"])
-                                    : 0
+                                    : 0,
+                                // Datos del chasis de este producto
+                                Chasis = reader["ar_chasis"]?.ToString() ?? "",
+                                Ano = reader["ar_ano"]?.ToString() ?? "",
+                                Motor = reader["ar_motor"]?.ToString() ?? "",
+                                Modelo = reader["ar_modelo"]?.ToString() ?? "",
+                                Color = reader["ar_color"]?.ToString() ?? "",
+                                Placa = reader["ar_placa"]?.ToString() ?? "",
+                                Matricula = reader["ar_matri"]?.ToString() ?? ""
                             };
 
                             detalle.Productos.Add(producto);
 
-                            // Si es el primer producto con datos de chasis, llenar esa información
-                            // (puedes modificar esto si quieres mostrar múltiples chasis)
+                            // Si es el primer producto con datos de chasis, llenar la sección principal
                             if (primerProducto)
                             {
                                 var chasis = reader["ar_chasis"]?.ToString();

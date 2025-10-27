@@ -1,4 +1,9 @@
-﻿// Funciones para el modal de factura
+﻿// Variables globales para el modal
+let todosLosProductos = [];
+let paginaModalActual = 1;
+let registrosPorPaginaModal = 5;
+
+// Funciones para el modal de factura
 function abrirModalFactura(facturaNumero) {
     const modal = document.getElementById('modalFactura');
     document.body.style.overflow = 'hidden';
@@ -40,47 +45,10 @@ function cerrarModalFactura() {
     const modal = document.getElementById('modalFactura');
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
-}
 
-function limpiarModalFactura() {
-    // Limpiar todos los campos
-    const campos = [
-        'detalle-factura', 'detalle-fecha', 'detalle-ncf', 'detalle-usuario',
-        'detalle-turno', 'detalle-control', 'detalle-caja', 'detalle-vendedor',
-        'detalle-cliente-codigo', 'detalle-cliente-nombre', 'detalle-cliente-rnc',
-        'detalle-cliente-direccion', 'detalle-cliente-telefono',
-        'detalle-chasis', 'detalle-ano', 'detalle-motor', 'detalle-modelo',
-        'detalle-color', 'detalle-placa', 'detalle-matricula'
-    ];
-
-    campos.forEach(campo => {
-        const elemento = document.getElementById(campo);
-        if (elemento) elemento.textContent = '-';
-    });
-
-    // Limpiar totales
-    const totales = [
-        'detalle-monto-bruto', 'detalle-impuesto17', 'detalle-itbis18',
-        'detalle-descuento', 'detalle-subtotal', 'detalle-total-itbis', 'detalle-monto-neto'
-    ];
-
-    totales.forEach(total => {
-        const elemento = document.getElementById(total);
-        if (elemento) elemento.textContent = 'RD$ 0.00';
-    });
-
-    // Limpiar tabla de productos
-    const tbody = document.getElementById('productos-tbody');
-    if (tbody) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 40px; color: #95a5a6;">
-                    <div class="spinner" style="margin: 0 auto 15px;"></div>
-                    Cargando productos...
-                </td>
-            </tr>
-        `;
-    }
+    // Limpiar variables
+    todosLosProductos = [];
+    paginaModalActual = 1;
 }
 
 function cargarDetalleFactura(facturaNumero) {
@@ -128,47 +96,16 @@ function poblarModalConDatos(datos) {
     setTextoSeguro('detalle-cliente-direccion', datos.clienteDireccion);
     setTextoSeguro('detalle-cliente-telefono', datos.clienteTelefono);
 
-    // Datos del Chasis
-    setTextoSeguro('detalle-chasis', datos.chasis);
-    setTextoSeguro('detalle-ano', datos.ano);
-    setTextoSeguro('detalle-motor', datos.motor);
-    setTextoSeguro('detalle-modelo', datos.modelo);
-    setTextoSeguro('detalle-color', datos.color);
-    setTextoSeguro('detalle-placa', datos.placa);
-    setTextoSeguro('detalle-matricula', datos.matricula);
-
-    // Productos
-    const tbody = document.getElementById('productos-tbody');
-    if (tbody) {
-        if (datos.productos && datos.productos.length > 0) {
-            let html = '';
-
-            datos.productos.forEach((producto, index) => {
-                html += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${producto.codigoFicha || '-'}</td>
-                        <td>${producto.cantidad || '0'}</td>
-                        <td>${producto.unidadMedida || 'UD'}</td>
-                        <td>${producto.descripcion || '-'}</td>
-                        <td class="text-right">${formatearMoneda(producto.precioUnitario)}</td>
-                        <td class="text-right">${formatearMoneda(producto.itbis)}</td>
-                        <td class="text-right">${formatearMoneda(producto.total)}</td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = html;
-        } else {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" style="text-align: center; padding: 40px; color: #95a5a6;">
-                        No hay productos registrados
-                    </td>
-                </tr>
-            `;
-        }
+    // Datos del primer vehículo (si existe)
+    if (datos.productos && datos.productos.length > 0) {
+        const primerProducto = datos.productos[0];
+        cargarDatosVehiculo(primerProducto);
     }
+
+    // Guardar TODOS los productos y mostrar la primera página
+    todosLosProductos = datos.productos || [];
+    paginaModalActual = 1;
+    mostrarPaginaModal(1);
 
     // Totales con valores seguros
     const setMonedaSegura = (id, valor) => {
@@ -187,12 +124,195 @@ function poblarModalConDatos(datos) {
     setMonedaSegura('detalle-monto-neto', datos.montoNeto);
 }
 
+// Función para cargar los datos del vehículo en la sección superior
+function cargarDatosVehiculo(producto) {
+    const setTextoSeguro = (id, valor, valorPorDefecto = '-') => {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.textContent = valor || valorPorDefecto;
+            // Agregar efecto visual de actualización
+            elemento.classList.add('campo-actualizado');
+            setTimeout(() => {
+                elemento.classList.remove('campo-actualizado');
+            }, 1000);
+        }
+    };
+
+    // Cargar TODA la información del producto/vehículo
+    setTextoSeguro('detalle-codigo-ficha', producto.codigoFicha);
+    setTextoSeguro('detalle-descripcion-vehiculo', producto.descripcion);
+    setTextoSeguro('detalle-chasis', producto.chasis);
+    setTextoSeguro('detalle-ano', producto.ano);
+    setTextoSeguro('detalle-motor', producto.motor);
+    setTextoSeguro('detalle-modelo', producto.modelo);
+    setTextoSeguro('detalle-color', producto.color);
+    setTextoSeguro('detalle-placa', producto.placa);
+    setTextoSeguro('detalle-matricula', producto.matricula);
+}
+
+// Función para mostrar página de productos (CON PAGINACIÓN REAL)
+function mostrarPaginaModal(pagina) {
+    paginaModalActual = pagina;
+
+    const tbody = document.getElementById('productos-tbody');
+    if (!tbody) return;
+
+    if (!todosLosProductos || todosLosProductos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 40px; color: #95a5a6;">
+                    No hay productos registrados
+                </td>
+            </tr>
+        `;
+        actualizarPaginacionModal();
+        return;
+    }
+
+    // CALCULAR QUÉ PRODUCTOS MOSTRAR EN ESTA PÁGINA
+    const inicio = (pagina - 1) * registrosPorPaginaModal;
+    const fin = inicio + registrosPorPaginaModal;
+    const productosPagina = todosLosProductos.slice(inicio, fin);
+
+    let html = '';
+    productosPagina.forEach((producto, indexLocal) => {
+        const indiceGlobal = inicio + indexLocal;
+        const tieneVehiculo = producto.chasis && producto.chasis.trim() !== '';
+
+        html += `
+            <tr>
+                <td>${indiceGlobal + 1}</td>
+                <td>${producto.codigoFicha || '-'}</td>
+                
+                <td>${producto.descripcion || '-'}</td>
+                <td class="text-right">${formatearMoneda(producto.precioUnitario)}</td>
+                <td class="text-right">${formatearMoneda(producto.itbis)}</td>
+                <td class="text-right">${formatearMoneda(producto.total)}</td>
+                <td style="text-align: center;">
+                    ${tieneVehiculo ? `
+                        <button class="btn-seleccionar-chasis" onclick="seleccionarVehiculo(${indiceGlobal})" title="Ver datos completos del vehículo">
+                            🚗 Ver Datos
+                        </button>
+                    ` : '<span style="color: #95a5a6;">-</span>'}
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+    actualizarPaginacionModal();
+}
+
+// Función para seleccionar y mostrar TODOS los datos del vehículo
+function seleccionarVehiculo(indice) {
+    if (!todosLosProductos || !todosLosProductos[indice]) {
+        alert('Error: No se pudo cargar los datos del vehículo');
+        return;
+    }
+
+    const producto = todosLosProductos[indice];
+    cargarDatosVehiculo(producto);
+
+    // Feedback visual
+    mostrarNotificacionModal('✓ Datos del vehículo cargados correctamente');
+
+    // Scroll suave hacia la sección de datos del vehículo
+    const seccionVehiculo = document.querySelector('.factura-section:nth-child(3)');
+    if (seccionVehiculo) {
+        seccionVehiculo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// Actualizar información de paginación del modal
+function actualizarPaginacionModal() {
+    const total = todosLosProductos.length;
+    const totalPaginas = Math.ceil(total / registrosPorPaginaModal);
+
+    // Actualizar info de registros
+    const rangoInicio = total > 0 ? ((paginaModalActual - 1) * registrosPorPaginaModal) + 1 : 0;
+    const rangoFin = Math.min(paginaModalActual * registrosPorPaginaModal, total);
+
+    const infoElement = document.getElementById('modal-pagination-info');
+    if (infoElement) {
+        infoElement.innerHTML = `
+            Mostrando <strong>${rangoInicio}</strong> a <strong>${rangoFin}</strong> de <strong>${total}</strong> productos
+        `;
+    }
+
+    // Generar botones de paginación
+    generarBotonesPaginacionModal(totalPaginas);
+}
+
+// Generar botones de paginación del modal
+function generarBotonesPaginacionModal(totalPaginas) {
+    const contenedor = document.getElementById('modal-pagination-controls');
+    if (!contenedor) return;
+
+    let html = '';
+
+    // Botón anterior
+    html += `<button class="pagination-btn-modal" onclick="mostrarPaginaModal(${paginaModalActual - 1})" ${paginaModalActual === 1 ? 'disabled' : ''}>
+        ← Anterior
+    </button>`;
+
+    // Números de página (mostrar máximo 5 botones)
+    const maxBotones = 5;
+    let inicioPagina = Math.max(1, paginaModalActual - 2);
+    let finPagina = Math.min(totalPaginas, inicioPagina + maxBotones - 1);
+
+    if (finPagina - inicioPagina < maxBotones - 1) {
+        inicioPagina = Math.max(1, finPagina - maxBotones + 1);
+    }
+
+    for (let i = inicioPagina; i <= finPagina; i++) {
+        html += `<button class="pagination-btn-modal ${i === paginaModalActual ? 'active' : ''}" onclick="mostrarPaginaModal(${i})">
+            ${i}
+        </button>`;
+    }
+
+    // Botón siguiente
+    html += `<button class="pagination-btn-modal" onclick="mostrarPaginaModal(${paginaModalActual + 1})" ${paginaModalActual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''}>
+        Siguiente →
+    </button>`;
+
+    contenedor.innerHTML = html;
+}
+
+// Cambiar registros por página en el modal
+function cambiarRegistrosPorPaginaModal() {
+    const select = document.getElementById('modal-records-per-page');
+    if (select) {
+        registrosPorPaginaModal = parseInt(select.value);
+        paginaModalActual = 1;
+        mostrarPaginaModal(1);
+    }
+}
+
+// Mostrar notificación en el modal
+function mostrarNotificacionModal(mensaje) {
+    const notif = document.createElement('div');
+    notif.className = 'modal-notification';
+    notif.textContent = mensaje;
+    document.body.appendChild(notif);
+
+    setTimeout(() => {
+        notif.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+        notif.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notif);
+        }, 300);
+    }, 2000);
+}
+
 function mostrarErrorModal(mensaje) {
     const tbody = document.getElementById('productos-tbody');
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; padding: 40px; color: #e74c3c;">
+                <td colspan="9" style="text-align: center; padding: 40px; color: #e74c3c;">
                     <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
                     <strong>${mensaje}</strong>
                 </td>
@@ -217,12 +337,12 @@ function formatearFecha(fecha) {
 function formatearMoneda(valor) {
     try {
         const num = parseFloat(valor || 0);
-        return 'RD$ ' + num.toLocaleString('es-DO', {
+        return num.toLocaleString('es-DO', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
     } catch (e) {
-        return 'RD$ 0.00';
+        return '0.00';
     }
 }
 

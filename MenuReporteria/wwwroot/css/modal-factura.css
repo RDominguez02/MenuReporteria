@@ -1,5 +1,4 @@
-﻿
-.modal-factura {
+﻿.modal-factura {
     display: none;
     position: fixed;
     z-index: 1000;
@@ -11,12 +10,12 @@
     overflow: auto;
 }
 
-.modal-factura.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.3s ease;
-}
+    .modal-factura.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
 
 @keyframes fadeIn {
     from {
@@ -146,6 +145,24 @@
     border-radius: 4px;
     border: 1px solid #e9ecef;
     font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* Animación para campos actualizados */
+.campo-actualizado {
+    background: #d4edda !important;
+    border-color: #28a745 !important;
+    animation: pulseGreen 0.5s ease;
+}
+
+@keyframes pulseGreen {
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.02);
+    }
 }
 
 /* Tabla de Productos */
@@ -153,10 +170,12 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
+    font-weight: 700;
 }
 
     .productos-table thead {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+       
         color: white;
     }
 
@@ -168,6 +187,9 @@
         font-size: 11px;
         letter-spacing: 0.5px;
     }
+        .productos-table th.text-right {
+            text-align: right;
+        }
 
     .productos-table tbody tr {
         border-bottom: 1px solid #e9ecef;
@@ -185,12 +207,135 @@
 
         .productos-table td.text-right {
             text-align: right;
+            font-weight: 700;
             font-family: 'Courier New', monospace;
         }
 
+/* Botón Seleccionar Chasis */
+.btn-seleccionar-chasis {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+    .btn-seleccionar-chasis:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-seleccionar-chasis:active {
+        transform: translateY(0);
+    }
+
+/* Paginación del Modal */
+.modal-pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #dee2e6;
+}
+
+.modal-pagination-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+.modal-records-per-page {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .modal-records-per-page label {
+        font-weight: 600;
+        color: #7f8c8d;
+    }
+
+    .modal-records-per-page select {
+        padding: 6px 12px;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+.modal-pagination-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.pagination-btn-modal {
+    padding: 8px 12px;
+    border: 1px solid #e9ecef;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+}
+
+    .pagination-btn-modal:hover:not(:disabled) {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    .pagination-btn-modal.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border-color: #667eea;
+    }
+
+    .pagination-btn-modal:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+/* Notificación del Modal */
+.modal-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s ease;
+}
+
+    .modal-notification.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
 /* Resumen de Totales */
 .factura-totales {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: white;
     padding: 20px;
     border-radius: 8px;
@@ -222,6 +367,7 @@
     font-size: 18px;
     font-weight: 700;
     font-family: 'Courier New', monospace;
+    
 }
 
 /* Footer del Modal */
@@ -268,7 +414,7 @@
 
 /* Botón Ver en la tabla */
 .btn-ver-factura {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, #0097a7 100%);
     color: white;
     border: none;
     padding: 6px 12px;
@@ -321,6 +467,14 @@
     .factura-totales-grid {
         grid-template-columns: 1fr;
     }
-}
 
-*/
+    .modal-pagination-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .modal-pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

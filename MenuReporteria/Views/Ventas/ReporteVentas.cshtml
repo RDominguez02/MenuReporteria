@@ -266,6 +266,7 @@
         <table class="results-table">
             <thead>
                 <tr>
+                    <th>Ver Factura</th>
                     <th>Fecha</th>
                     <th>Factura</th>
                     <th>NCF</th>
@@ -281,7 +282,7 @@
                     <th>Tasa</th>
                     <th>Total Real</th>
                     <th>Total Chasis</th>
-                    <th>Ver Factura</th>
+                    @* <th>Ver Factura</th> *@
                 </tr>
             </thead>
             <tbody>
@@ -290,6 +291,11 @@
                     @foreach (var venta in Model.Ventas)
                     {
                         <tr>
+                            <td style="text-align: center;">
+                                <button class="btn-ver-factura" onclick="abrirModalFactura('@venta.Factura')">
+                                    👁️ Ver
+                                </button>
+                            </td>
                             <td>@venta.Fecha.ToString("dd/MM/yyyy")</td>
                             <td>@venta.Factura</td>
                             <td>@venta.Ncf</td>
@@ -305,11 +311,11 @@
                             <td style="text-align: right;">@venta.Tasa.ToString("N2")</td>
                             <td style="text-align: right;">@venta.TotalR.ToString("N2")</td>
                             <td style="text-align: right;">@venta.TotalChasis.ToString("N2")</td>
-                            <td style="text-align: center;">
+@*                             <td style="text-align: center;">
                                 <button class="btn-ver-factura" onclick="abrirModalFactura('@venta.Factura')">
                                     👁️ Ver
                                 </button>
-                            </td>
+                            </td> *@
                         </tr>
                     }
                 }
@@ -491,6 +497,9 @@
 
                         html += `
                             <tr>
+                                <td style="text-align:center;">
+                                    <button class="btn-ver-factura" onclick="abrirModalFactura('${venta.factura}')">👁️ Ver</button>
+                                </td>
                                 <td>${fechaFormateada}</td>
                                 <td>${venta.factura}</td>
                                 <td>${venta.ncf || ''}</td>
@@ -506,9 +515,7 @@
                                 <td style="text-align: right;">${parseFloat(venta.tasa).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                 <td style="text-align: right;">${parseFloat(venta.totalR).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                 <td style="text-align: right;">${parseFloat(venta.totalChasis).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                <td style="text-align:center;">
-                                    <button class="btn-ver-factura" onclick="abrirModalFactura('${venta.factura}')">👁️ Ver</button>
-                                </td>
+
                             </tr>
                         `;
                     });

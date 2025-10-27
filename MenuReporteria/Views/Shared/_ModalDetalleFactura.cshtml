@@ -10,233 +10,217 @@
 
     <!-- Body -->
     <div class="modal-body">
-
-            <!-- Información General -->
-            <div class="factura-section">
-                <div class="factura-section-title">
-                    ℹ️ Información General
-                </div>
-                <div class="factura-grid">
-                    <div class="factura-field">
-                        <label>Número de Factura</label>
-                        <div class="factura-field-value" id="detalle-factura">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Fecha</label>
-                        <div class="factura-field-value" id="detalle-fecha">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>NCF</label>
-                        <div class="factura-field-value" id="detalle-ncf">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Usuario</label>
-                        <div class="factura-field-value" id="detalle-usuario">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Turno</label>
-                        <div class="factura-field-value" id="detalle-turno">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Último Control</label>
-                        <div class="factura-field-value" id="detalle-control">-</div>
-                    </div>
-                </div>
+        <!-- Información General -->
+        <div class="factura-section">
+            <div class="factura-section-title">
+                ℹ️ Información General
             </div>
-
-            <!-- Información del Cliente -->
-            <div class="factura-section">
-                <div class="factura-section-title">
-                    👤 Información del Cliente
+            <div class="factura-grid">
+                <div class="factura-field">
+                    <label>Número de Factura</label>
+                    <div class="factura-field-value" id="detalle-factura">-</div>
                 </div>
-                <div class="factura-grid">
-                    <div class="factura-field">
-                        <label>Número de Cliente</label>
-                        <div class="factura-field-value" id="detalle-cliente-codigo">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Nombre</label>
-                        <div class="factura-field-value" id="detalle-cliente-nombre">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Dirección</label>
-                        <div class="factura-field-value" id="detalle-cliente-direccion">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Teléfono</label>
-                        <div class="factura-field-value" id="detalle-cliente-telefono">-</div>
-                    </div>
+                <div class="factura-field">
+                    <label>Fecha</label>
+                    <div class="factura-field-value" id="detalle-fecha">-</div>
                 </div>
+                <div class="factura-field">
+                    <label>NCF</label>
+                    <div class="factura-field-value" id="detalle-ncf">-</div>
+                </div>
+@*                 <div class="factura-field">
+                    <label>Usuario</label>
+                    <div class="factura-field-value" id="detalle-usuario">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Turno</label>
+                    <div class="factura-field-value" id="detalle-turno">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Último Control</label>
+                    <div class="factura-field-value" id="detalle-control">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Caja</label>
+                    <div class="factura-field-value" id="detalle-caja">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Vendedor</label>
+                    <div class="factura-field-value" id="detalle-vendedor">-</div>
+                </div> *@
             </div>
+        </div>
 
-            <!-- Datos de Chasis -->
-            <div class="factura-section">
-                <div class="factura-section-title">
-                    🚗 Datos del Chasis
-                </div>
-                <div class="factura-grid">
-                    <div class="factura-field">
-                        <label>Chasis</label>
-                        <div class="factura-field-value" id="detalle-chasis">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Año</label>
-                        <div class="factura-field-value" id="detalle-ano">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Motor</label>
-                        <div class="factura-field-value" id="detalle-motor">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Modelo</label>
-                        <div class="factura-field-value" id="detalle-modelo">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Color</label>
-                        <div class="factura-field-value" id="detalle-color">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Placa</label>
-                        <div class="factura-field-value" id="detalle-placa">-</div>
-                    </div>
-                    <div class="factura-field">
-                        <label>Matrícula</label>
-                        <div class="factura-field-value" id="detalle-matricula">-</div>
-                    </div>
-                </div>
+        <!-- Información del Cliente -->
+        <div class="factura-section">
+            <div class="factura-section-title">
+                👤 Información del Cliente
             </div>
-
-            <!-- Tabla de Productos -->
-            <div class="factura-section">
-                <div class="factura-section-title">
-                    📦 Productos/Servicios
+            <div class="factura-grid">
+                <div class="factura-field">
+                    <label>Número de Cliente</label>
+                    <div class="factura-field-value" id="detalle-cliente-codigo">-</div>
                 </div>
-                <table class="productos-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Cod. Ficha</th>
-                            <th>Cantidad</th>
-                            <th>UM</th>
-                            <th>Descripción</th>
-                            <th class="text-right">Precio Unit.</th>
-                            <th class="text-right">ITBIS</th>
-                            <th class="text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productos-tbody">
-                        <tr>
-                            <td colspan="8" style="text-align: center; padding: 40px; color: #95a5a6;">
-                                Cargando productos...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="factura-field">
+                    <label>Nombre</label>
+                    <div class="factura-field-value" id="detalle-cliente-nombre">-</div>
+                </div>
+@*                 <div class="factura-field">
+                    <label>RNC/Cédula</label>
+                    <div class="factura-field-value" id="detalle-cliente-rnc">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Dirección</label>
+                    <div class="factura-field-value" id="detalle-cliente-direccion">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Teléfono</label>
+                    <div class="factura-field-value" id="detalle-cliente-telefono">-</div>
+                </div> *@
             </div>
+        </div>
 
-            <!-- Totales -->
-            <div class="factura-totales">
-                <div class="factura-totales-grid">
-                    <div class="total-item">
-                        <label>Impuesto 17%</label>
-                        <div class="total-item-value" id="detalle-impuesto17">RD$ 0.00</div>
-                    </div>
-                    <div class="total-item">
-                        <label>Itbis 18%</label>
-                        <div class="total-item-value" id="detalle-itbis18">RD$ 0.00</div>
-                    </div>
-                    <div class="total-item">
-                        <label>Descuento</label>
-                        <div class="total-item-value" id="detalle-descuento">RD$ 0.00</div>
-                    </div>
-                    <div class="total-item">
-                        <label>Sub-Total</label>
-                        <div class="total-item-value" id="detalle-subtotal">RD$ 0.00</div>
-                    </div>
-                    <div class="total-item">
-                        <label>Total Itbis</label>
-                        <div class="total-item-value" id="detalle-total-itbis">RD$ 0.00</div>
-                    </div>
-                    <div class="total-item" style="background: rgba(255, 255, 255, 0.3);">
-                        <label>Monto Neto</label>
-                        <div class="total-item-value" id="detalle-monto-neto" style="font-size: 22px;">RD$ 0.00</div>
-                    </div>
+        <!-- Datos de Chasis -->
+        <div class="factura-section">
+            <div class="factura-section-title">
+                🚗 Datos del Vehículo
+                <small style="font-size: 12px; font-weight: normal; color: #7f8c8d; margin-left: auto;">
+                    💡 Selecciona un vehículo de la tabla para ver sus datos aquí
+                </small>
+            </div>
+            <div class="factura-grid">
+                <div class="factura-field">
+                    <label>Código Ficha</label>
+                    <div class="factura-field-value" id="detalle-codigo-ficha">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Descripción</label>
+                    <div class="factura-field-value" id="detalle-descripcion-vehiculo">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Chasis</label>
+                    <div class="factura-field-value" id="detalle-chasis">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Año</label>
+                    <div class="factura-field-value" id="detalle-ano">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Motor</label>
+                    <div class="factura-field-value" id="detalle-motor">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Modelo</label>
+                    <div class="factura-field-value" id="detalle-modelo">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Color</label>
+                    <div class="factura-field-value" id="detalle-color">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Placa</label>
+                    <div class="factura-field-value" id="detalle-placa">-</div>
+                </div>
+                <div class="factura-field">
+                    <label>Matrícula</label>
+                    <div class="factura-field-value" id="detalle-matricula">-</div>
                 </div>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="modal-footer">
-            <button class="btn-modal btn-modal-primary" onclick="imprimirFactura()">
-                🖨️ Imprimir
-            </button>
-            <button class="btn-modal btn-modal-secondary" onclick="cerrarModalFactura()">
-                Cerrar
-            </button>
+        <!-- Tabla de Productos -->
+        <div class="factura-section">
+            <div class="factura-section-title">
+                📦 Productos/Servicios
+            </div>
+
+            <!-- Paginación ARRIBA de la tabla -->
+            <div class="modal-pagination-container">
+                <div class="modal-pagination-info">
+                    <div class="modal-records-per-page">
+                        <label>Productos por página:</label>
+                        <select id="modal-records-per-page" onchange="cambiarRegistrosPorPaginaModal()">
+                            <option value="5" selected>5</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                    <div id="modal-pagination-info">
+                        Mostrando <strong>0</strong> a <strong>0</strong> de <strong>0</strong> productos
+                    </div>
+                </div>
+                <div class="modal-pagination-controls" id="modal-pagination-controls">
+                    <!-- Los botones de paginación se generarán dinámicamente -->
+                </div>
+            </div>
+
+            <table class="productos-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Cod. Ficha</th>
+
+                        <th>Descripción</th>
+                        <th class="text-right">Precio Unit.</th>
+                        <th class="text-right">ITBIS</th>
+                        <th class="text-right">Total</th>
+                        <th style="text-align: center;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="productos-tbody">
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #95a5a6;">
+                            <div class="spinner" style="margin: 0 auto 15px;"></div>
+                            Cargando productos...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="factura-totales">
+            <div class="factura-totales-grid">
+                <div class="total-item">
+                    <label>Monto Bruto</label>
+                    <div class="total-item-value" id="detalle-monto-bruto">RD$ 0.00</div>
+                </div>
+                <div class="total-item">
+                    <label>Impuesto 17%</label>
+                    <div class="total-item-value" id="detalle-impuesto17">RD$ 0.00</div>
+                </div>
+                <div class="total-item">
+                    <label>ITBIS 18%</label>
+                    <div class="total-item-value" id="detalle-itbis18">RD$ 0.00</div>
+                </div>
+                <div class="total-item">
+                    <label>Descuento</label>
+                    <div class="total-item-value" id="detalle-descuento">RD$ 0.00</div>
+                </div>
+                <div class="total-item-">
+                    <label>Sub-Total</label>
+                    <div class="total-item-value" id="detalle-subtotal">RD$ 0.00</div>
+                </div>
+                <div class="total-item">
+                    <label>Total ITBIS</label>
+                    <div class="total-item-value" id="detalle-total-itbis">RD$ 0.00</div>
+                </div>
+                <div class="total-item" style="background: rgba(255, 255, 255, 0.3);">
+                    <label>Monto Neto</label>
+                    <div class="total-item-value" id="detalle-monto-neto" style="font-size: 22px;">RD$ 0.00</div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+        <button class="btn-modal btn-modal-primary" onclick="imprimirFactura()">
+            🖨️ Imprimir
+        </button>
+        <button class="btn-modal btn-modal-secondary" onclick="cerrarModalFactura()">
+            Cerrar
+        </button>
+    </div>
 </div>
-
-<!-- JavaScript -->
-<script>
-    function abrirModalFactura(facturaNumero) {
-        const modal = document.getElementById('modalFactura');
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-
-        // Aquí cargarías los datos de la factura
-        // Por ahora solo mostramos el número
-        document.getElementById('detalle-factura').textContent = facturaNumero;
-
-        // Simular carga de datos (luego se conectará al backend)
-        cargarDetalleFactura(facturaNumero);
-    }
-
-    function cerrarModalFactura() {
-        const modal = document.getElementById('modalFactura');
-        modal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
-
-    function cargarDetalleFactura(facturaNumero) {
-        // Esta función se conectará al backend para obtener los datos
-        // Por ahora muestra datos de ejemplo
-        console.log('Cargando factura:', facturaNumero);
-
-        // Ejemplo de cómo se cargarían los productos
-        const productosEjemplo = `
-            <tr>
-                <td>1</td>
-                <td>LZRKTF00BS1010183</td>
-                <td>1.00</td>
-                <td>UD</td>
-                <td>TAURO LEAD 125 BLANCO 2025</td>
-                <td class="text-right">1090.00</td>
-                <td class="text-right">152.20</td>
-                <td class="text-right">1,090.00</td>
-            </tr>
-        `;
-
-        // Descomentar cuando tengas datos reales
-        // document.getElementById('productos-tbody').innerHTML = productosEjemplo;
-    }
-
-    function imprimirFactura() {
-        window.print();
-    }
-
-    // Cerrar modal al hacer clic fuera
-    window.onclick = function(event) {
-        const modal = document.getElementById('modalFactura');
-        if (event.target === modal) {
-            cerrarModalFactura();
-        }
-    }
-
-    // Cerrar modal con tecla ESC
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            cerrarModalFactura();
-        }
-    });
-</script>
