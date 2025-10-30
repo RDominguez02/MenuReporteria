@@ -268,7 +268,7 @@ namespace MenuReporteria.Services
                 var queryEncabezado = @"
             SELECT TOP 1
                 he_factura, he_fecha, he_ncf, he_usuario, he_turno, 
-                he_orden as ultimoControl, he_Caja, ve_codigo,
+                he_orden as ultimoControl, he_Caja, ve_codigo, mo_codigo, he_tasa,
                 cl_codigo, he_nombre, he_rnc, he_direc1, he_telef,
                 he_monto, he_itbis, he_itbis18, he_valdesc, 
                 he_neto, he_itbis08
@@ -297,7 +297,10 @@ namespace MenuReporteria.Services
                             detalle.UltimoControl = reader["ultimoControl"]?.ToString() ?? "";
                             detalle.Caja = reader["he_Caja"]?.ToString() ?? "";
                             detalle.Vendedor = reader["ve_codigo"]?.ToString() ?? "";
-
+                            detalle.Moneda = reader["mo_codigo"]?.ToString() ?? "";
+                            detalle.Tasa = reader["he_tasa"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["he_tasa"])
+                                : 0;
                             // Información del Cliente
                             detalle.ClienteCodigo = reader["cl_codigo"]?.ToString() ?? "";
                             detalle.ClienteNombre = reader["he_nombre"]?.ToString() ?? "";
@@ -345,6 +348,7 @@ namespace MenuReporteria.Services
                 A.ar_color,
                 A.ar_placa,
                 A.ar_matri,
+                A.ar_marca,
                 ISNULL(B.AR_DESCRI, '') as AR_DESCRI
             FROM IVBDDEPE A
             LEFT JOIN orlando.dbo.IVBDVEHICULO B ON A.AR_CODIGO = B.AR_CODIGO
@@ -390,7 +394,9 @@ namespace MenuReporteria.Services
                                 Modelo = reader["ar_modelo"]?.ToString() ?? "",
                                 Color = reader["ar_color"]?.ToString() ?? "",
                                 Placa = reader["ar_placa"]?.ToString() ?? "",
-                                Matricula = reader["ar_matri"]?.ToString() ?? ""
+                                Matricula = reader["ar_matri"]?.ToString() ?? "",
+                                Marca = reader["ar_marca"]?.ToString() ?? ""
+
                             };
 
                             detalle.Productos.Add(producto);
@@ -408,6 +414,7 @@ namespace MenuReporteria.Services
                                     detalle.Color = reader["ar_color"]?.ToString() ?? "";
                                     detalle.Placa = reader["ar_placa"]?.ToString() ?? "";
                                     detalle.Matricula = reader["ar_matri"]?.ToString() ?? "";
+                                    detalle.Marca = reader["ar_marca"]?.ToString() ?? "";
                                     primerProducto = false;
                                 }
                             }
@@ -438,6 +445,7 @@ namespace MenuReporteria.Services
                 ar_placa,
                 ar_matri,
                 AR_CODIGO,
+                AR_MARCA,
                 DE_DESCRI
             FROM IVBDDEPE
             WHERE DE_FACTURA = @Factura
@@ -464,6 +472,7 @@ namespace MenuReporteria.Services
                                 Color = reader["ar_color"]?.ToString() ?? "",
                                 Placa = reader["ar_placa"]?.ToString() ?? "",
                                 Matricula = reader["ar_matri"]?.ToString() ?? "",
+                                Marca = reader["ar_marca"]?.ToString() ?? "",
                                 CodigoArticulo = reader["AR_CODIGO"]?.ToString() ?? "",
                                 Descripcion = reader["DE_DESCRI"]?.ToString() ?? ""
                             });
@@ -485,6 +494,7 @@ namespace MenuReporteria.Services
             public string Color { get; set; }
             public string Placa { get; set; }
             public string Matricula { get; set; }
+            public string Marca { get; set; }
             public string CodigoArticulo { get; set; }
             public string Descripcion { get; set; }
         }

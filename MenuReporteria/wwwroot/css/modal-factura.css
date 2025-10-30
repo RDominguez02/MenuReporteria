@@ -69,6 +69,14 @@
         font-weight: 600;
     }
 
+.modal-header-info {
+    padding: 20px 30px;
+    display: contents ;
+    /*justify-content: space-between;*/
+    align-content: flex-start;
+
+}
+
 .modal-close {
     background: rgba(255, 255, 255, 0.2);
     border: none;
@@ -344,30 +352,32 @@
 
 .factura-totales-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 15px;
 }
 
 .total-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
+    flex-direction: column; /* 🔹 Pone el número debajo del label */
+    justify-content: center;
+    align-items: center; /* 🔹 Centra vertical y horizontalmente */
+    
     background: rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
+    border-radius: 8px;
+    text-align: center; /* 🔹 Centra el texto */
 }
 
     .total-item label {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
+        margin-bottom: 5px; /* 🔹 Espacio entre el label y el valor */
     }
 
 .total-item-value {
-    font-size: 18px;
+    font-size: 16px; /* 🔹 Un poco más grande para destacar */
     font-weight: 700;
     font-family: 'Courier New', monospace;
-    
 }
 
 /* Footer del Modal */
@@ -394,7 +404,7 @@
 }
 
 .btn-modal-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: white;
 }
 
@@ -414,7 +424,7 @@
 
 /* Botón Ver en la tabla */
 .btn-ver-factura {
-    background: linear-gradient(135deg, var(--primary) 0%, #0097a7 100%);
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: white;
     border: none;
     padding: 6px 12px;

@@ -88,6 +88,8 @@ function poblarModalConDatos(datos) {
     setTextoSeguro('detalle-control', datos.ultimoControl);
     setTextoSeguro('detalle-caja', datos.caja);
     setTextoSeguro('detalle-vendedor', datos.vendedor);
+    setTextoSeguro('detalle-moneda', datos.moneda);
+    setTextoSeguro('detalle-tasa', datos.tasa);
 
     // Información del Cliente
     setTextoSeguro('detalle-cliente-codigo', datos.clienteCodigo);
@@ -183,18 +185,17 @@ function mostrarPaginaModal(pagina) {
             <tr>
                 <td>${indiceGlobal + 1}</td>
                 <td>${producto.codigoFicha || '-'}</td>
-                
-                <td>${producto.descripcion || '-'}</td>
+                <td>${producto.marca || '-'}</td>
+                <td>${producto.modelo || '-'}</td>
+                <td>${producto.color || '-'}</td>
+                <td>${producto.ano || '-'}</td>
+                <td>${producto.motor || '-'}</td>
+                <td>${producto.placa || '-'}</td>
+                <td>${producto.matricula || '-'}</td>
                 <td class="text-right">${formatearMoneda(producto.precioUnitario)}</td>
                 <td class="text-right">${formatearMoneda(producto.itbis)}</td>
                 <td class="text-right">${formatearMoneda(producto.total)}</td>
-                <td style="text-align: center;">
-                    ${tieneVehiculo ? `
-                        <button class="btn-seleccionar-chasis" onclick="seleccionarVehiculo(${indiceGlobal})" title="Ver datos completos del vehículo">
-                            🚗 Ver Datos
-                        </button>
-                    ` : '<span style="color: #95a5a6;">-</span>'}
-                </td>
+
             </tr>
         `;
     });
@@ -202,6 +203,14 @@ function mostrarPaginaModal(pagina) {
     tbody.innerHTML = html;
     actualizarPaginacionModal();
 }
+
+//<td style="text-align: center;">
+//    ${tieneVehiculo ? `
+//                        <button class="btn-seleccionar-chasis" onclick="seleccionarVehiculo(${indiceGlobal})" title="Ver datos completos del vehículo">
+//                            🚗 Ver Datos
+//                        </button>
+//                    ` : '<span style="color: #95a5a6;">-</span>'}
+//</td>
 
 // Función para seleccionar y mostrar TODOS los datos del vehículo
 function seleccionarVehiculo(indice) {

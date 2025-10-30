@@ -18,6 +18,8 @@ namespace MenuReporteria.Models
         public string UltimoControl { get; set; }
         public string Caja { get; set; }
         public string Vendedor { get; set; }
+        public string Moneda { get; set; }
+        public decimal Tasa { get; set; }
 
         // Información del Cliente
         public string ClienteCodigo { get; set; }
@@ -34,7 +36,7 @@ namespace MenuReporteria.Models
         public string Color { get; set; }
         public string Placa { get; set; }
         public string Matricula { get; set; }
-
+        public string Marca{ get; set; }
         // Productos
         public List<ProductoFacturaItem> Productos { get; set; } = new List<ProductoFacturaItem>();
 
@@ -46,6 +48,7 @@ namespace MenuReporteria.Models
         public decimal Subtotal { get; set; }
         public decimal TotalItbis { get; set; }
         public decimal MontoNeto { get; set; }
+        
     }
 
     /// <summary>
@@ -69,5 +72,6 @@ namespace MenuReporteria.Models
         public string Color { get; set; }
         public string Placa { get; set; }
         public string Matricula { get; set; }
+        public string Marca { get; set; }
     }
 }

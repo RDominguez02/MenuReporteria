@@ -5,13 +5,17 @@
     <!-- Header -->
     <div class="modal-header">
         <h2>📄 Detalle de Factura #@(Model?.Factura ?? "---")</h2>
+<h3 id="detalle-fecha"></h3>
+        <h3 id="detalle-cliente-nombre"></h3>
+        <h4 id="detalle-moneda">$</h4>
+        <h4 id="detalle-tasa"></h4>
         <button class="modal-close" onclick="cerrarModalFactura()">×</button>
     </div>
 
     <!-- Body -->
     <div class="modal-body">
         <!-- Información General -->
-        <div class="factura-section">
+        @* <div class="factura-section">
             <div class="factura-section-title">
                 ℹ️ Información General
             </div>
@@ -28,7 +32,7 @@
                     <label>NCF</label>
                     <div class="factura-field-value" id="detalle-ncf">-</div>
                 </div>
-@*                 <div class="factura-field">
+                 <div class="factura-field">
                     <label>Usuario</label>
                     <div class="factura-field-value" id="detalle-usuario">-</div>
                 </div>
@@ -47,7 +51,7 @@
                 <div class="factura-field">
                     <label>Vendedor</label>
                     <div class="factura-field-value" id="detalle-vendedor">-</div>
-                </div> *@
+                </div> 
             </div>
         </div>
 
@@ -65,7 +69,7 @@
                     <label>Nombre</label>
                     <div class="factura-field-value" id="detalle-cliente-nombre">-</div>
                 </div>
-@*                 <div class="factura-field">
+                <div class="factura-field">
                     <label>RNC/Cédula</label>
                     <div class="factura-field-value" id="detalle-cliente-rnc">-</div>
                 </div>
@@ -76,11 +80,11 @@
                 <div class="factura-field">
                     <label>Teléfono</label>
                     <div class="factura-field-value" id="detalle-cliente-telefono">-</div>
-                </div> *@
+                </div> 
             </div>
-        </div>
+        </div> *@
 
-        <!-- Datos de Chasis -->
+@*         <!-- Datos de Chasis -->
         <div class="factura-section">
             <div class="factura-section-title">
                 🚗 Datos del Vehículo
@@ -126,12 +130,12 @@
                     <div class="factura-field-value" id="detalle-matricula">-</div>
                 </div>
             </div>
-        </div>
+        </div> *@
 
         <!-- Tabla de Productos -->
         <div class="factura-section">
             <div class="factura-section-title">
-                📦 Productos/Servicios
+                Detalle de Factura
             </div>
 
             <!-- Paginación ARRIBA de la tabla -->
@@ -144,6 +148,7 @@
                             <option value="10">10</option>
                             <option value="20">20</option>
                             <option value="50">50</option>
+                            @* <option value="100" selected>100</option> *@
                         </select>
                     </div>
                     <div id="modal-pagination-info">
@@ -160,12 +165,17 @@
                     <tr>
                         <th>#</th>
                         <th>Cod. Ficha</th>
-
-                        <th>Descripción</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Color</th>
+                        <th>Año</th>
+                        <th>Motor</th>
+                        <th>Placa</th>
+                        <th>Matricula</th>
                         <th class="text-right">Precio Unit.</th>
                         <th class="text-right">ITBIS</th>
                         <th class="text-right">Total</th>
-                        <th style="text-align: center;">Acción</th>
+@*                         <th style="text-align: center;">Acción</th> *@
                     </tr>
                 </thead>
                 <tbody id="productos-tbody">
@@ -198,7 +208,7 @@
                     <label>Descuento</label>
                     <div class="total-item-value" id="detalle-descuento">RD$ 0.00</div>
                 </div>
-                <div class="total-item-">
+                <div class="total-item">
                     <label>Sub-Total</label>
                     <div class="total-item-value" id="detalle-subtotal">RD$ 0.00</div>
                 </div>
@@ -208,7 +218,7 @@
                 </div>
                 <div class="total-item" style="background: rgba(255, 255, 255, 0.3);">
                     <label>Monto Neto</label>
-                    <div class="total-item-value" id="detalle-monto-neto" style="font-size: 22px;">RD$ 0.00</div>
+                    <div class="total-item-value" id="detalle-monto-neto">RD$ 0.00</div>
                 </div>
             </div>
         </div>

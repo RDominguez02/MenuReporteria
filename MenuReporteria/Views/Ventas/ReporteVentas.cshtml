@@ -542,30 +542,104 @@
 
             // Imprimir reporte
             function imprimirReporte() {
-                window.print();
+                // Validar si hay datos cargados
+                if (todosLosRegistros.length === 0) {
+                    alert('⚠️ No hay datos cargados para imprimir. Por favor, carga el reporte primero.');
+                    return;
+                }
+
+                const form = document.getElementById('filtrosForm');
+                const formData = new FormData(form);
+
+                // Mostrar spinner
+                document.getElementById('loadingSpinner').style.display = 'block';
+
+                // Enviar solicitud para generar PDF
+                fetch('@Url.Action("GenerarPDF", "Ventas")', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    // Ocultar spinner
+                    document.getElementById('loadingSpinner').style.display = 'none';
+
+                    if (response.ok) {
+                        return response.blob();
+                    } else {
+                        throw new Error('Error al generar el PDF');
+                    }
+                })
+                .then(blob => {
+                    // Crear URL del blob
+                    const url = window.URL.createObjectURL(blob);
+
+                    // Crear link temporal y descargar
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `ReporteVentas_${new Date().toISOString().slice(0, 10)}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    // Liberar el URL
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    alert('❌ Error al generar el PDF: ' + error.message);
+                });
             }
 
             // Exportar reporte
             function exportarReporte() {
-                const form = document.getElementById('filtrosForm');
-                const formData = new FormData(form);
+                // // Validar si hay datos cargados
+                // if (todosLosRegistros.length === 0) {
+                //     alert('⚠️ No hay datos cargados para exportar. Por favor, carga el reporte primero.');
+                //     return;
+                // }
 
-                fetch('@Url.Action("Exportar", "Ventas")', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Exportación completada');
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al exportar');
-                });
+                // const form = document.getElementById('filtrosForm');
+                // const formData = new FormData(form);
+
+                // // Mostrar spinner
+                // document.getElementById('loadingSpinner').style.display = 'block';
+
+                // // Enviar solicitud para generar Excel
+                // fetch('@Url.Action("ExportarExcel", "Ventas")', {
+                //     method: 'POST',
+                //     body: formData
+                // })
+                // .then(response => {
+                //     // Ocultar spinner
+                //     document.getElementById('loadingSpinner').style.display = 'none';
+
+                //     if (response.ok) {
+                //         return response.blob();
+                //     } else {
+                //         throw new Error('Error al generar el archivo Excel');
+                //     }
+                // })
+                // .then(blob => {
+                //     // Crear URL del blob
+                //     const url = window.URL.createObjectURL(blob);
+
+                //     // Crear link temporal y descargar
+                //     const a = document.createElement('a');
+                //     a.href = url;
+                //     a.download = `ReporteVentas_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                //     document.body.appendChild(a);
+                //     a.click();
+                //     document.body.removeChild(a);
+
+                //     // Liberar el URL
+                //     window.URL.revokeObjectURL(url);
+                // })
+                // .catch(error => {
+                //     console.error('Error:', error);
+                //     document.getElementById('loadingSpinner').style.display = 'none';
+                //     alert('❌ Error al exportar a Excel: ' + error.message);
+                // });
             }
 
             // Cargar datos al presionar Enter en los campos
