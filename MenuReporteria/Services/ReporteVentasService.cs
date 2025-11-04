@@ -231,6 +231,7 @@ namespace MenuReporteria.Services
                                 Fecha = reader.GetDateTime(reader.GetOrdinal("he_fecha")),
                                 Factura = reader["he_factura"].ToString(),
                                 Ncf = reader["he_ncf"].ToString(),
+                                CodigoCliente = reader["cl_codigo"].ToString(),
                                 Cliente = reader["he_nombre"].ToString(),
                                 Vendedor = reader["ve_codigo"].ToString(),
                                 Caja = reader["he_Caja"].ToString(),

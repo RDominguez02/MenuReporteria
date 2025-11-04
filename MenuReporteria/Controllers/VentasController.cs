@@ -217,12 +217,12 @@ public class VentasController : Controller
             doc.Add(new Paragraph(" "));
 
             // TABLA
-            PdfPTable tabla = new PdfPTable(9);
+            PdfPTable tabla = new PdfPTable(12);
             tabla.WidthPercentage = 100;
-            tabla.SetWidths(new float[] { 8, 10, 8, 20, 6, 6, 12, 8, 12 });
+            tabla.SetWidths(new float[] { 8, 10, 8, 8, 20, 6, 6, 12, 8, 12, 12, 12 });
 
             // Encabezados
-            string[] encabezados = { "FECHA", "DOCUMENTO", "CÓDIGO", "NOMBRE", "VENDEDOR", "SUCU.", "VALOR", "TASA", "TOTAL RD$" };
+            string[] encabezados = { "FECHA", "DOCUMENTO", "NCF","CÓDIGO", "NOMBRE", "VEND.", "SUCU.", "VALOR", "MONEDA", "TASA", "TOTAL RD$", "CHASIS" };
 
             foreach (string encabezado in encabezados)
             {
@@ -239,7 +239,7 @@ public class VentasController : Controller
                 //celda.TextRise = 0;
 
                 // Cambiar color del texto a blanco
-                Phrase frase = new Phrase(encabezado, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, Font.NORMAL, new BaseColor(255, 255, 255)));
+                Phrase frase = new Phrase(encabezado, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, Font.NORMAL, new BaseColor(255, 255, 255)));
                 celda.Phrase = frase;
 
                 tabla.AddCell(celda);
@@ -268,7 +268,15 @@ public class VentasController : Controller
                 tabla.AddCell(celdaDocumento);
 
                 // CÓDIGO (NCF)
-                PdfPCell celdaCodigo = new PdfPCell(new Phrase(venta.Ncf ?? "", fontNormal));
+                PdfPCell celdaNCF = new PdfPCell(new Phrase(venta.Ncf ?? "", fontNormal));
+                celdaNCF.BackgroundColor = colorFondo;
+                celdaNCF.BorderWidth = 0;
+                celdaNCF.HorizontalAlignment = Element.ALIGN_CENTER;
+                celdaNCF.Padding = 4;
+                tabla.AddCell(celdaNCF);
+
+                // CÓDIGO (Cliente)
+                PdfPCell celdaCodigo = new PdfPCell(new Phrase(venta.CodigoCliente ?? "", fontNormal));
                 celdaCodigo.BackgroundColor = colorFondo;
                 celdaCodigo.BorderWidth = 0;
                 celdaCodigo.HorizontalAlignment = Element.ALIGN_CENTER;
@@ -307,6 +315,14 @@ public class VentasController : Controller
                 celdaValor.Padding = 4;
                 tabla.AddCell(celdaValor);
 
+                // MONEDA
+                PdfPCell celdaMoneda = new PdfPCell(new Phrase(venta.Moneda ?? "", fontNormal));
+                celdaMoneda.BackgroundColor = colorFondo;
+                celdaMoneda.BorderWidth = 0;
+                celdaMoneda.HorizontalAlignment = Element.ALIGN_CENTER;
+                celdaMoneda.Padding = 4;
+                tabla.AddCell(celdaMoneda);
+
                 // TASA
                 PdfPCell celdaTasa = new PdfPCell(new Phrase(venta.Tasa.ToString("N2"), fontNormal));
                 celdaTasa.BackgroundColor = colorFondo;
@@ -322,6 +338,14 @@ public class VentasController : Controller
                 celdaTotal.HorizontalAlignment = Element.ALIGN_RIGHT;
                 celdaTotal.Padding = 4;
                 tabla.AddCell(celdaTotal);
+
+                // TOTAL Chasis
+                PdfPCell celdaChasis = new PdfPCell(new Phrase(venta.TotalChasis.ToString("N2"), fontNormal));
+                celdaChasis.BackgroundColor = colorFondo;
+                celdaChasis.BorderWidth = 0;
+                celdaChasis.HorizontalAlignment = Element.ALIGN_RIGHT;
+                celdaChasis.Padding = 4;
+                tabla.AddCell(celdaChasis);
 
                 alternado = !alternado;
             }
@@ -435,7 +459,7 @@ public class VentasController : Controller
 
             // ENCABEZADOS DE TABLA
             int fila = 6;
-            string[] encabezados = { "FECHA", "DOCUMENTO", "CÓDIGO", "NOMBRE", "VENDEDOR", "SUCU.", "VALOR", "TASA", "TOTAL RD$" };
+            string[] encabezados = { "FECHA", "DOCUMENTO", "NCF","CÓDIGO", "NOMBRE", "VENDEDOR", "SUCU.", "VALOR", "MONEDA", "TASA", "TOTAL RD$", "CHASIS" };
 
             for (int i = 0; i < encabezados.Length; i++)
             {
@@ -466,15 +490,19 @@ public class VentasController : Controller
                 worksheet.Cells[fila, 1].Value = venta.Fecha.ToString("dd-MM-yyyy");
                 worksheet.Cells[fila, 2].Value = venta.Factura;
                 worksheet.Cells[fila, 3].Value = venta.Ncf;
-                worksheet.Cells[fila, 4].Value = venta.Cliente;
-                worksheet.Cells[fila, 5].Value = venta.Vendedor;
-                worksheet.Cells[fila, 6].Value = "02";
-                worksheet.Cells[fila, 7].Value = $"{venta.MontoNeto:N2} {venta.Moneda}";
-                worksheet.Cells[fila, 8].Value = venta.Tasa;
-                worksheet.Cells[fila, 9].Value = venta.TotalR;
+                worksheet.Cells[fila, 4].Value = venta.CodigoCliente;
+                worksheet.Cells[fila, 5].Value = venta.Cliente;
+                worksheet.Cells[fila, 6].Value = venta.Vendedor;
+                worksheet.Cells[fila, 7].Value = "02";
+                worksheet.Cells[fila, 8].Value = $"{venta.MontoNeto:N2}";
+                worksheet.Cells[fila, 9].Value = venta.Moneda;
+                worksheet.Cells[fila, 10].Value = venta.Tasa;
+                worksheet.Cells[fila, 11].Value = venta.TotalR;
+                worksheet.Cells[fila, 12].Value = venta.TotalChasis;
+                
 
                 // Aplicar formato y color
-                for (int i = 1; i <= 9; i++)
+                for (int i = 1; i <= 12; i++)
                 {
                     var cell = worksheet.Cells[fila, i];
                     cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -553,12 +581,15 @@ public class VentasController : Controller
             worksheet.Column(1).Width = 12;
             worksheet.Column(2).Width = 12;
             worksheet.Column(3).Width = 12;
-            worksheet.Column(4).Width = 25;
-            worksheet.Column(5).Width = 12;
-            worksheet.Column(6).Width = 8;
-            worksheet.Column(7).Width = 18;
-            worksheet.Column(8).Width = 12;
-            worksheet.Column(9).Width = 15;
+            worksheet.Column(4).Width = 12;
+            worksheet.Column(5).Width = 25;
+            worksheet.Column(6).Width = 12;
+            worksheet.Column(7).Width = 8;
+            worksheet.Column(8).Width = 18;
+            worksheet.Column(9).Width = 12;
+            worksheet.Column(10).Width = 18;
+            worksheet.Column(11).Width = 18;
+            worksheet.Column(12).Width = 18;
 
             return package.GetAsByteArray();
         }

@@ -270,6 +270,7 @@
                     <th>Fecha</th>
                     <th>Factura</th>
                     <th>NCF</th>
+                    <th>Codigo</th>
                     <th>Cliente</th>
                     <th>Vendedor</th>
                     <th>Caja</th>
@@ -299,6 +300,7 @@
                             <td>@venta.Fecha.ToString("dd/MM/yyyy")</td>
                             <td>@venta.Factura</td>
                             <td>@venta.Ncf</td>
+                            <td>@venta.CodigoCliente</td>
                             <td>@venta.Cliente</td>
                             <td>@venta.Vendedor</td>
                             <td>@venta.Caja</td>
@@ -503,6 +505,7 @@
                                 <td>${fechaFormateada}</td>
                                 <td>${venta.factura}</td>
                                 <td>${venta.ncf || ''}</td>
+                                 <td>${venta.codigoCliente || ''}</td>
                                 <td>${venta.cliente}</td>
                                 <td>${venta.vendedor || ''}</td>
                                 <td>${venta.caja}</td>
@@ -593,53 +596,53 @@
 
             // Exportar reporte
             function exportarReporte() {
-                // // Validar si hay datos cargados
-                // if (todosLosRegistros.length === 0) {
-                //     alert('⚠️ No hay datos cargados para exportar. Por favor, carga el reporte primero.');
-                //     return;
-                // }
+                // Validar si hay datos cargados
+                if (todosLosRegistros.length === 0) {
+                    alert('⚠️ No hay datos cargados para exportar. Por favor, carga el reporte primero.');
+                    return;
+                }
 
-                // const form = document.getElementById('filtrosForm');
-                // const formData = new FormData(form);
+                const form = document.getElementById('filtrosForm');
+                const formData = new FormData(form);
 
-                // // Mostrar spinner
-                // document.getElementById('loadingSpinner').style.display = 'block';
+                // Mostrar spinner
+                document.getElementById('loadingSpinner').style.display = 'block';
 
-                // // Enviar solicitud para generar Excel
-                // fetch('@Url.Action("ExportarExcel", "Ventas")', {
-                //     method: 'POST',
-                //     body: formData
-                // })
-                // .then(response => {
-                //     // Ocultar spinner
-                //     document.getElementById('loadingSpinner').style.display = 'none';
+                // Enviar solicitud para generar Excel
+                fetch('@Url.Action("ExportarExcel", "Ventas")', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    // Ocultar spinner
+                    document.getElementById('loadingSpinner').style.display = 'none';
 
-                //     if (response.ok) {
-                //         return response.blob();
-                //     } else {
-                //         throw new Error('Error al generar el archivo Excel');
-                //     }
-                // })
-                // .then(blob => {
-                //     // Crear URL del blob
-                //     const url = window.URL.createObjectURL(blob);
+                    if (response.ok) {
+                        return response.blob();
+                    } else {
+                        throw new Error('Error al generar el archivo Excel');
+                    }
+                })
+                .then(blob => {
+                    // Crear URL del blob
+                    const url = window.URL.createObjectURL(blob);
 
-                //     // Crear link temporal y descargar
-                //     const a = document.createElement('a');
-                //     a.href = url;
-                //     a.download = `ReporteVentas_${new Date().toISOString().slice(0, 10)}.xlsx`;
-                //     document.body.appendChild(a);
-                //     a.click();
-                //     document.body.removeChild(a);
+                    // Crear link temporal y descargar
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `ReporteVentas_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
 
-                //     // Liberar el URL
-                //     window.URL.revokeObjectURL(url);
-                // })
-                // .catch(error => {
-                //     console.error('Error:', error);
-                //     document.getElementById('loadingSpinner').style.display = 'none';
-                //     alert('❌ Error al exportar a Excel: ' + error.message);
-                // });
+                    // Liberar el URL
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    alert('❌ Error al exportar a Excel: ' + error.message);
+                });
             }
 
             // Cargar datos al presionar Enter en los campos

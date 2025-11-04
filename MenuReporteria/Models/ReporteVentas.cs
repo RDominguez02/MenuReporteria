@@ -12,6 +12,7 @@ namespace MenuReporteria.Models
         public DateTime Fecha { get; set; }
         public string Factura { get; set; }
         public string Ncf { get; set; }
+        public string CodigoCliente { get; set; }
         public string Cliente { get; set; }
         public string Vendedor { get; set; }
         public string Caja { get; set; }
