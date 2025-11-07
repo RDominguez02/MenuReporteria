@@ -1,0 +1,187 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using MenuReporteria.Services;
+using MenuReporteria.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace MenuReporteria.Controllers
+{
+    public class CuentasPorCobrarController : Controller
+    {
+        private readonly CuentasPorCobrarService _cuentasService;
+
+        public CuentasPorCobrarController(CuentasPorCobrarService cuentasService)
+        {
+            _cuentasService = cuentasService;
+        }
+
+        [HttpGet]
+        public IActionResult Index()
+        {
+            var modelo = new ResultadoCxC
+            {
+                Filtros = new FiltroCxC
+                {
+                    FechaDesde = DateTime.Now.AddMonths(-1),
+                    FechaHasta = DateTime.Now,
+                    ZonasDisponibles = _cuentasService.ObtenerZonas(),
+                    ClientesDisponibles = _cuentasService.ObtenerClientes(),
+                    VendedoresDisponibles = _cuentasService.ObtenerVendedores(),
+                    MonedasDisponibles = _cuentasService.ObtenerMonedas()
+                }
+            };
+
+            return View("ReporteCxC", modelo);
+        }
+
+        [HttpPost]
+        public IActionResult Generar(
+            DateTime? fechaDesde,
+            DateTime? fechaHasta,
+            string zona,
+            string cliente,
+            string vendedor,
+            string factura,
+            string facturaHasta,
+            int? cuotaDesde,
+            int? cuotaHasta,
+            string moneda,
+            string ordenMoneda)
+        {
+            try
+            {
+                var filtros = new FiltroCxC
+                {
+                    FechaDesde = fechaDesde,
+                    FechaHasta = fechaHasta,
+                    Zona = zona,
+                    Cliente = cliente,
+                    Vendedor = vendedor,
+                    FacturaDesde = factura,
+                    FacturaHasta = facturaHasta,
+                    CuotaDesde = cuotaDesde,
+                    CuotaHasta = cuotaHasta,
+                    Moneda = moneda,
+                    OrdenMoneda = ordenMoneda
+                };
+
+                var cuentas = _cuentasService.ObtenerCuentasPorFiltro(filtros);
+
+                var totalMonto = 0m;
+                foreach (var cuenta in cuentas)
+                {
+                    totalMonto += cuenta.TotalR;
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    totalFacturas = cuentas.Count,
+                    valorTotal = totalMonto.ToString("N2"),
+                    data = new
+                    {
+                        cuentas = cuentas
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Error al generar el reporte: " + ex.Message
+                });
+            }
+        }
+
+        [HttpPost]
+        public IActionResult GenerarPDF(
+            DateTime? fechaDesde,
+            DateTime? fechaHasta,
+            string zona,
+            string cliente,
+            string vendedor,
+            string factura,
+            string facturaHasta,
+            int? cuotaDesde,
+            int? cuotaHasta,
+            string moneda,
+            string ordenMoneda)
+        {
+            try
+            {
+                var filtros = new FiltroCxC
+                {
+                    FechaDesde = fechaDesde,
+                    FechaHasta = fechaHasta,
+                    Zona = zona,
+                    Cliente = cliente,
+                    Vendedor = vendedor,
+                    FacturaDesde = factura,
+                    FacturaHasta = facturaHasta,
+                    CuotaDesde = cuotaDesde,
+                    CuotaHasta = cuotaHasta,
+                    Moneda = moneda,
+                    OrdenMoneda = ordenMoneda
+                };
+
+                var cuentas = _cuentasService.ObtenerCuentasPorFiltro(filtros);
+
+                // TODO: Implementar generación de PDF con iTextSharp
+                var pdfBytes = new byte[0];
+
+                return File(pdfBytes, "application/pdf", $"ReporteCxC_{DateTime.Now:yyyyMMdd}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Error al generar PDF: " + ex.Message);
+            }
+        }
+
+        [HttpPost]
+        public IActionResult ExportarExcel(
+            DateTime? fechaDesde,
+            DateTime? fechaHasta,
+            string zona,
+            string cliente,
+            string vendedor,
+            string factura,
+            string facturaHasta,
+            int? cuotaDesde,
+            int? cuotaHasta,
+            string moneda,
+            string ordenMoneda)
+        {
+            try
+            {
+                var filtros = new FiltroCxC
+                {
+                    FechaDesde = fechaDesde,
+                    FechaHasta = fechaHasta,
+                    Zona = zona,
+                    Cliente = cliente,
+                    Vendedor = vendedor,
+                    FacturaDesde = factura,
+                    FacturaHasta = facturaHasta,
+                    CuotaDesde = cuotaDesde,
+                    CuotaHasta = cuotaHasta,
+                    Moneda = moneda,
+                    OrdenMoneda = ordenMoneda
+                };
+
+                var cuentas = _cuentasService.ObtenerCuentasPorFiltro(filtros);
+
+                // TODO: Implementar generación de Excel con EPPlus
+                var excelBytes = new byte[0];
+
+                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"ReporteCxC_{DateTime.Now:yyyyMMdd}.xlsx");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Error al exportar Excel: " + ex.Message);
+            }
+        }
+    }
+}

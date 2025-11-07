@@ -1,0 +1,527 @@
+﻿@model ResultadoCxC
+
+@{
+    ViewData["Title"] = "Reporte de Cuentas por Cobrar";
+}
+
+<link rel="stylesheet" href="~/css/cxc.css" />
+<link rel="stylesheet" href="~/css/modal-factura.css" />
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relación Cuentas x Cobrar - Estado x Cliente</title>
+</head>
+<body>
+    <div class="reporte-container">
+        <!-- Header -->
+        <div class="reporte-header">
+            <div class="reporte-header-left">
+                <div class="reporte-header-icon">📊</div>
+                <h1>Relación Cuentas x Cobrar</h1>
+            </div>
+
+            <!-- Resumen en el Header -->
+            <div class="header-summary">
+                <div class="header-summary-item">
+                    <div class="header-summary-label">Total Registros</div>
+                    <div class="header-summary-value" id="totalRegistros">@(Model?.TotalFacturas ?? 0)</div>
+                </div>
+                <div class="header-summary-item">
+                    <div class="header-summary-label">Total Monto</div>
+                    <div class="header-summary-value" id="totalMonto">RD$ @((Model?.ValorTotal ?? 0).ToString("N2"))</div>
+                </div>
+            </div>
+
+            <!-- Botones en el Header -->
+            <div class="header-actions">
+                <button type="button" class="btn-toggle-filters" onclick="toggleFiltros()">
+                    <span id="toggleIcon">🔽</span> Desplegar filtros
+                </button>
+                <button type="button" class="btn-action btn-aceptar" onclick="generarReporte()">
+                    ✓ Filtrar
+                </button>
+                <button type="button" class="btn-action btn-imprimir" onclick="imprimirReporte()">
+                    🖨️ Imprimir
+                </button>
+                <button type="button" class="btn-action btn-exportar" onclick="exportarReporte()">
+                    📥 Exportar
+                </button>
+                <button type="button" class="btn-action btn-retornar" onclick="window.location.href='@Url.Action("Index", "Home")'">
+                    ← Retornar
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <form id="filtrosForm" class="filters-section" method="post" action="@Url.Action("Generar", "CuentasPorCobrar")">
+            <div class="filters-title">Criterios de Búsqueda</div>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="fechaDesde">Desde la Fecha de Corte</label>
+                    <input type="date" id="fechaDesde" name="fechaDesde">
+                </div>
+                <div class="filter-group">
+                    <label for="fechaHasta">Hasta la Fecha De Corte</label>
+                    <input type="date" id="fechaHasta" name="fechaHasta">
+                </div>
+                <div class="filter-group">
+                    <label for="zona">Para la Zona</label>
+                    <select id="zona" name="zona">
+                        <option value="">Seleccionar...</option>
+                        <option value="zona1">Zona 1</option>
+                        <option value="zona2">Zona 2</option>
+                        <option value="zona3">Zona 3</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="cliente">Para el Cliente</label>
+                    <select id="cliente" name="cliente">
+                        <option value="">Seleccionar...</option>
+                        <option value="cliente1">Cliente 1</option>
+                        <option value="cliente2">Cliente 2</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="vendedor">Para el Vendedor</label>
+                    <select id="vendedor" name="vendedor">
+                        <option value="">Seleccionar...</option>
+                        <option value="vend1">Vendedor 1</option>
+                        <option value="vend2">Vendedor 2</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="factura">Desde la Factura</label>
+                    <input type="text" id="factura" name="factura" placeholder="Número de factura">
+                </div>
+                <div class="filter-group">
+                    <label for="facturaHasta">Hasta la Factura</label>
+                    <input type="text" id="facturaHasta" name="facturaHasta" placeholder="Número de factura">
+                </div>
+                <div class="filter-group">
+                    <label for="cuotaDesde">Desde la Cuota</label>
+                    <input type="number" id="cuotaDesde" name="cuotaDesde" placeholder="Número de cuota">
+                </div>
+                <div class="filter-group">
+                    <label for="cuotaHasta">Hasta la Cuota</label>
+                    <input type="number" id="cuotaHasta" name="cuotaHasta" placeholder="Número de cuota">
+                </div>
+
+                <!-- Tipo de Reporte -->
+                <div class="report-type-group">
+                    <h4>Para la Moneda</h4>
+                    <div class="report-type-options">
+                        <label>
+                            <input type="radio" name="moneda" value="codigo" checked>
+                            Código
+                        </label>
+                        <label>
+                            <input type="radio" name="moneda" value="nombre">
+                            Nombre
+                        </label>
+                    </div>
+                </div>
+
+                <div class="report-type-group">
+                    <h4>Orden de Moneda</h4>
+                    <div class="report-type-options">
+                        <label>
+                            <input type="radio" name="ordenMoneda" value="opcion1" checked>
+                            Orden de Moneda + Fecha + Factura
+                        </label>
+                        <label>
+                            <input type="radio" name="ordenMoneda" value="opcion2">
+                            Orden de Moneda + Facturas + Fecha
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Cargando datos...</p>
+        </div>
+
+        <!-- Paginación Superior -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                <div class="records-per-page">
+                    <label for="recordsPerPage">Registros por página:</label>
+                    <select id="recordsPerPage" name="recordsPerPage" onchange="cambiarRegistrosPorPagina()">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                <div class="pagination-text">
+                    Mostrando <strong id="rangoInicio">0</strong> a <strong id="rangoFin">0</strong> de <strong id="totalRegistrosPagina">0</strong> registros
+                </div>
+            </div>
+            <div class="pagination-controls" id="paginationControls">
+                <!-- Los botones de paginación se generarán dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Tabla de Resultados -->
+        <div id="tablaResultados" class="table-container">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Nombre / Dirección</th>
+                        <th>Fecha Factura</th>
+                        <th>Factura</th>
+                        <th>Fecha Cuota</th>
+                        <th>Días Vencimiento</th>
+                        <th>Nro Cuota</th>
+                        <th>Moneda</th>
+                        <th>Zona</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model?.Items != null && Model.Items.Count > 0)
+                    {
+                        @foreach (var CXC in Model.Items)
+                        {
+                            <tr>
+                                <td>@CXC.NombreCliente</td>
+                                <td>@CXC.Fecha.ToString("dd-MM-yyyy")</td>
+                                <td>@CXC.Factura</td>
+                                <td>@CXC.Fecha.ToString("dd-MM-yyyy")</td>
+                                <td>30</td>
+                                <td>1/12</td>
+                                <td>RD</td>
+                                <td>5</td>
+                                <td style="text-align: right;">@CXC.TotalR.ToString("N2")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="empty-state">
+                                <div class="empty-state-icon">📊</div>
+                                <div class="empty-state-text">No hay datos para mostrar</div>
+                                <small>Ajusta los filtros y haz clic en "Filtrar" para cargar los datos</small>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación Inferior -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                <div class="pagination-text">
+                    Página <strong id="paginaActualInfo">1</strong> de <strong id="totalPaginasInfo">1</strong>
+                </div>
+            </div>
+            <div class="pagination-controls" id="paginationControlsBottom">
+                <!-- Los botones de paginación se generarán dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables de paginación
+        let todosLosRegistros = [];
+        let paginaActual = 1;
+        let registrosPorPagina = 25;
+
+        // Toggle filtros
+        function toggleFiltros() {
+            const filtros = document.getElementById('filtrosForm');
+            const icon = document.getElementById('toggleIcon');
+
+            if (filtros.classList.contains('hidden')) {
+                filtros.classList.remove('hidden');
+                icon.textContent = '🔽';
+            } else {
+                filtros.classList.add('hidden');
+                icon.textContent = '▶️';
+            }
+        }
+
+        // Generar reporte
+        function generarReporte() {
+            const form = document.getElementById('filtrosForm');
+            const formData = new FormData(form);
+
+            // Ocultar filtros después de generar
+            const filtros = document.getElementById('filtrosForm');
+            const icon = document.getElementById('toggleIcon');
+            filtros.classList.add('hidden');
+            icon.textContent = '▶️';
+
+            // Reiniciar paginación
+            paginaActual = 1;
+
+            // Mostrar spinner
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('tablaResultados').style.display = 'none';
+
+            // Enviar formulario
+            fetch('@Url.Action("Generar", "CuentasPorCobrar")', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Guardar todos los registros
+                    todosLosRegistros = data.data.cuentas || [];
+                    actualizarResumen(data);
+                    mostrarPagina(1);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+
+                // Ocultar spinner
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('tablaResultados').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al cargar los datos');
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('tablaResultados').style.display = 'block';
+            });
+        }
+
+        // Cambiar registros por página
+        function cambiarRegistrosPorPagina() {
+            registrosPorPagina = parseInt(document.getElementById('recordsPerPage').value);
+            paginaActual = 1;
+            mostrarPagina(1);
+        }
+
+        // Mostrar página específica
+        function mostrarPagina(pagina) {
+            paginaActual = pagina;
+
+            const inicio = (pagina - 1) * registrosPorPagina;
+            const fin = inicio + registrosPorPagina;
+            const registrosPagina = todosLosRegistros.slice(inicio, fin);
+
+            actualizarTabla(registrosPagina);
+            actualizarInfoPaginacion(inicio, fin);
+            generarBotonesPaginacion();
+        }
+
+        // Actualizar información de paginación
+        function actualizarInfoPaginacion(inicio, fin) {
+            const total = todosLosRegistros.length;
+            document.getElementById('rangoInicio').textContent = total > 0 ? inicio + 1 : 0;
+            document.getElementById('rangoFin').textContent = Math.min(fin, total);
+            document.getElementById('totalRegistrosPagina').textContent = total;
+
+            const totalPaginas = Math.ceil(total / registrosPorPagina);
+            document.getElementById('paginaActualInfo').textContent = paginaActual;
+            document.getElementById('totalPaginasInfo').textContent = totalPaginas || 1;
+        }
+
+        // Generar botones de paginación
+        function generarBotonesPaginacion() {
+            const totalPaginas = Math.ceil(todosLosRegistros.length / registrosPorPagina);
+            const contenedorTop = document.getElementById('paginationControls');
+            const contenedorBottom = document.getElementById('paginationControlsBottom');
+
+            let html = '';
+
+            // Botón anterior
+            html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual - 1})" ${paginaActual === 1 ? 'disabled' : ''}>
+                ← Anterior
+            </button>`;
+
+            // Lógica para mostrar números de página
+            const maxBotones = 5;
+            let inicioPagina = Math.max(1, paginaActual - 2);
+            let finPagina = Math.min(totalPaginas, inicioPagina + maxBotones - 1);
+
+            if (finPagina - inicioPagina < maxBotones - 1) {
+                inicioPagina = Math.max(1, finPagina - maxBotones + 1);
+            }
+
+            // Primera página
+            if (inicioPagina > 1) {
+                html += `<button class="pagination-btn" onclick="mostrarPagina(1)">1</button>`;
+                if (inicioPagina > 2) {
+                    html += `<span class="pagination-ellipsis">...</span>`;
+                }
+            }
+
+            // Páginas numeradas
+            for (let i = inicioPagina; i <= finPagina; i++) {
+                html += `<button class="pagination-btn ${i === paginaActual ? 'active' : ''}" onclick="mostrarPagina(${i})">${i}</button>`;
+            }
+
+            // Última página
+            if (finPagina < totalPaginas) {
+                if (finPagina < totalPaginas - 1) {
+                    html += `<span class="pagination-ellipsis">...</span>`;
+                }
+                html += `<button class="pagination-btn" onclick="mostrarPagina(${totalPaginas})">${totalPaginas}</button>`;
+            }
+
+            // Botón siguiente
+            html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual + 1})" ${paginaActual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''}>
+                Siguiente →
+            </button>`;
+
+            contenedorTop.innerHTML = html;
+            contenedorBottom.innerHTML = html;
+        }
+
+        // Actualizar tabla con datos
+        function actualizarTabla(registros) {
+            const tbody = document.querySelector('.results-table tbody');
+
+            if (registros && registros.length > 0) {
+                let html = '';
+                registros.forEach(registro => {
+                    const fecha = new Date(registro.fecha);
+                    const fechaFormateada = fecha.toLocaleDateString('es-DO');
+
+                    html += `
+                        <tr>
+                            <td>${registro.cliente || ''}</td>
+                            <td>${fechaFormateada}</td>
+                            <td>${registro.factura || ''}</td>
+                            <td>${fechaFormateada}</td>
+                            <td>30</td>
+                            <td>1/12</td>
+                            <td>${registro.moneda || 'RD'}</td>
+                            <td>${registro.zona || '5'}</td>
+                            <td style="text-align: right;">${parseFloat(registro.totalR || 0).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">No se encontraron resultados</div>
+                            <small>Intenta ajustar los filtros de búsqueda</small>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Actualizar resumen (ahora en el header)
+        function actualizarResumen(data) {
+            document.getElementById('totalRegistros').textContent = data.totalFacturas || 0;
+            document.getElementById('totalMonto').textContent = 'RD$ ' + (data.valorTotal || 0).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        // Imprimir reporte
+        function imprimirReporte() {
+            if (todosLosRegistros.length === 0) {
+                alert('⚠️ No hay datos cargados para imprimir. Por favor, carga el reporte primero.');
+                return;
+            }
+
+            const form = document.getElementById('filtrosForm');
+            const formData = new FormData(form);
+
+            document.getElementById('loadingSpinner').style.display = 'block';
+
+            fetch('@Url.Action("GenerarPDF", "CuentasPorCobrar")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error('Error al generar el PDF');
+                }
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ReporteCxC_${new Date().toISOString().slice(0, 10)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loadingSpinner').style.display = 'none';
+                alert('❌ Error al generar el PDF: ' + error.message);
+            });
+        }
+
+        // Exportar reporte
+        function exportarReporte() {
+            if (todosLosRegistros.length === 0) {
+                alert('⚠️ No hay datos cargados para exportar. Por favor, carga el reporte primero.');
+                return;
+            }
+
+            const form = document.getElementById('filtrosForm');
+            const formData = new FormData(form);
+
+            document.getElementById('loadingSpinner').style.display = 'block';
+
+            fetch('@Url.Action("ExportarExcel", "CuentasPorCobrar")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error('Error al generar el archivo Excel');
+                }
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ReporteCxC_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loadingSpinner').style.display = 'none';
+                alert('❌ Error al exportar a Excel: ' + error.message);
+            });
+        }
+
+        // Cargar datos al presionar Enter
+        document.querySelectorAll('.filter-group input, .filter-group select').forEach(element => {
+            element.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    generarReporte();
+                }
+            });
+        });
+
+        // Inicializar paginación si hay datos al cargar
+        @if (Model?.Items != null && Model.Items.Count > 0)
+        {
+                <text>
+                        todosLosRegistros = @Html.Raw(Json.Serialize(Model.Items));
+                mostrarPagina(1);
+                </text>
+        }
+    </script>
+</body>
