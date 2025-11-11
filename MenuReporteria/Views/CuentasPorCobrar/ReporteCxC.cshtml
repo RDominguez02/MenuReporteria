@@ -55,71 +55,85 @@
 
         <!-- Filtros -->
         <form id="filtrosForm" class="filters-section" method="post" action="@Url.Action("Generar", "CuentasPorCobrar")">
+            @Html.AntiForgeryToken()
             <div class="filters-title">Criterios de Búsqueda</div>
             <div class="filters-grid">
                 <div class="filter-group">
                     <label for="fechaDesde">Desde la Fecha de Corte</label>
-                    <input type="date" id="fechaDesde" name="fechaDesde">
+                    <input type="date" id="fechaDesde" name="fechaDesde" value="@Model?.Filtros?.FechaDesde?.ToString("yyyy-MM-dd")">
                 </div>
                 <div class="filter-group">
                     <label for="fechaHasta">Hasta la Fecha De Corte</label>
-                    <input type="date" id="fechaHasta" name="fechaHasta">
+                    <input type="date" id="fechaHasta" name="fechaHasta" value="@Model?.Filtros?.FechaHasta?.ToString("yyyy-MM-dd")">
                 </div>
                 <div class="filter-group">
                     <label for="zona">Para la Zona</label>
                     <select id="zona" name="zona">
                         <option value="">Seleccionar...</option>
-                        <option value="zona1">Zona 1</option>
-                        <option value="zona2">Zona 2</option>
-                        <option value="zona3">Zona 3</option>
+                        @if (Model?.Filtros?.ZonasDisponibles != null)
+                        {
+                            foreach (var zona in Model.Filtros.ZonasDisponibles)
+                            {
+                                @* <option value="@zona.Valor" @(string.Equals(Model?.Filtros?.Zona, zona.Valor, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null)>@zona.Texto</option> *@
+                            }
+                        }
                     </select>
                 </div>
                 <div class="filter-group">
                     <label for="cliente">Para el Cliente</label>
                     <select id="cliente" name="cliente">
                         <option value="">Seleccionar...</option>
-                        <option value="cliente1">Cliente 1</option>
-                        <option value="cliente2">Cliente 2</option>
+                        @if (Model?.Filtros?.ClientesDisponibles != null)
+                        {
+                            foreach (var cliente in Model.Filtros.ClientesDisponibles)
+                            {
+                                @* <option value="@cliente.Valor" @(string.Equals(Model?.Filtros?.Cliente, cliente.Valor, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null)>@cliente.Texto</option> *@
+                            }
+                        }
                     </select>
                 </div>
                 <div class="filter-group">
                     <label for="vendedor">Para el Vendedor</label>
                     <select id="vendedor" name="vendedor">
                         <option value="">Seleccionar...</option>
-                        <option value="vend1">Vendedor 1</option>
-                        <option value="vend2">Vendedor 2</option>
+                        @if (Model?.Filtros?.VendedoresDisponibles != null)
+                        {
+                            foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
+                            {
+                                @* <option value="@vendedor.Valor" @(string.Equals(Model?.Filtros?.Vendedor, vendedor.Valor, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null)>@vendedor.Texto</option> *@
+                            }
+                        }
                     </select>
                 </div>
                 <div class="filter-group">
                     <label for="factura">Desde la Factura</label>
-                    <input type="text" id="factura" name="factura" placeholder="Número de factura">
+                    <input type="text" id="factura" name="factura" placeholder="Número de factura" value="@Model?.Filtros?.FacturaDesde">
                 </div>
                 <div class="filter-group">
                     <label for="facturaHasta">Hasta la Factura</label>
-                    <input type="text" id="facturaHasta" name="facturaHasta" placeholder="Número de factura">
+                    <input type="text" id="facturaHasta" name="facturaHasta" placeholder="Número de factura" value="@Model?.Filtros?.FacturaHasta">
                 </div>
                 <div class="filter-group">
                     <label for="cuotaDesde">Desde la Cuota</label>
-                    <input type="number" id="cuotaDesde" name="cuotaDesde" placeholder="Número de cuota">
+                    <input type="number" id="cuotaDesde" name="cuotaDesde" placeholder="Número de cuota" value="@(Model?.Filtros?.CuotaDesde?.ToString() ?? string.Empty)">
                 </div>
                 <div class="filter-group">
                     <label for="cuotaHasta">Hasta la Cuota</label>
-                    <input type="number" id="cuotaHasta" name="cuotaHasta" placeholder="Número de cuota">
+                    <input type="number" id="cuotaHasta" name="cuotaHasta" placeholder="Número de cuota" value="@(Model?.Filtros?.CuotaHasta?.ToString() ?? string.Empty)">
                 </div>
 
-                <!-- Tipo de Reporte -->
-                <div class="report-type-group">
-                    <h4>Para la Moneda</h4>
-                    <div class="report-type-options">
-                        <label>
-                            <input type="radio" name="moneda" value="codigo" checked>
-                            Código
-                        </label>
-                        <label>
-                            <input type="radio" name="moneda" value="nombre">
-                            Nombre
-                        </label>
-                    </div>
+                <div class="filter-group">
+                    <label for="moneda">Para la Moneda</label>
+                    <select id="moneda" name="moneda">
+                        <option value="">Seleccionar...</option>
+                        @if (Model?.Filtros?.MonedasDisponibles != null)
+                        {
+                            foreach (var moneda in Model.Filtros.MonedasDisponibles)
+                            {
+                                @* <option value="@moneda.Valor" @(string.Equals(Model?.Filtros?.Moneda, moneda.Valor, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null)>@moneda.Texto</option> *@
+                            }
+                        }
+                    </select>
                 </div>
 
                 <div class="report-type-group">
@@ -187,14 +201,17 @@
                         @foreach (var CXC in Model.Items)
                         {
                             <tr>
-                                <td>@CXC.NombreCliente</td>
-                                <td>@CXC.Fecha.ToString("dd-MM-yyyy")</td>
+                                <td>
+                                    <div>@CXC.NombreCliente</div>
+                                    <small>@CXC.Direccion</small>
+                                </td>
+                                <td>@CXC.FechaFactura.ToString("dd-MM-yyyy")</td>
                                 <td>@CXC.Factura</td>
-                                <td>@CXC.Fecha.ToString("dd-MM-yyyy")</td>
-                                <td>30</td>
-                                <td>1/12</td>
-                                <td>RD</td>
-                                <td>5</td>
+                                <td>@CXC.FechaFactura.ToString("dd-MM-yyyy")</td>
+                                <td>@CXC.DiasVencimiento</td>
+                                <td>@CXC.Cuota</td>
+                                <td>@CXC.Moneda</td>
+                                <td>@CXC.Zona</td>
                                 <td style="text-align: right;">@CXC.TotalR.ToString("N2")</td>
                             </tr>
                         }
@@ -386,19 +403,22 @@
             if (registros && registros.length > 0) {
                 let html = '';
                 registros.forEach(registro => {
-                    const fecha = new Date(registro.fecha);
-                    const fechaFormateada = fecha.toLocaleDateString('es-DO');
+                    const fecha = registro.fechaFactura ? new Date(registro.fechaFactura) : null;
+                    const fechaFormateada = fecha ? fecha.toLocaleDateString('es-DO') : '';
 
                     html += `
                         <tr>
-                            <td>${registro.cliente || ''}</td>
+                            <td>
+                                <div>${registro.nombreCliente || ''}</div>
+                                <small>${registro.direccion || ''}</small>
+                            </td>
                             <td>${fechaFormateada}</td>
                             <td>${registro.factura || ''}</td>
                             <td>${fechaFormateada}</td>
-                            <td>30</td>
-                            <td>1/12</td>
-                            <td>${registro.moneda || 'RD'}</td>
-                            <td>${registro.zona || '5'}</td>
+                            <td>${registro.diasVencimiento ?? 0}</td>
+                            <td>${registro.cuota || ''}</td>
+                            <td>${registro.moneda || ''}</td>
+                            <td>${registro.zona || ''}</td>
                             <td style="text-align: right;">${parseFloat(registro.totalR || 0).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                         </tr>
                     `;
@@ -420,7 +440,8 @@
         // Actualizar resumen (ahora en el header)
         function actualizarResumen(data) {
             document.getElementById('totalRegistros').textContent = data.totalFacturas || 0;
-            document.getElementById('totalMonto').textContent = 'RD$ ' + (data.valorTotal || 0).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            const totalMonto = Number(data.valorTotal || 0);
+            document.getElementById('totalMonto').textContent = 'RD$ ' + totalMonto.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
 
         // Imprimir reporte

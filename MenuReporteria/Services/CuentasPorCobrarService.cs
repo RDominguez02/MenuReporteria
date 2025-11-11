@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using MenuReporteria.Models;
+using System.Text;
+using System.Linq;
+using System.Globalization;
 
 namespace MenuReporteria.Services
 {
@@ -14,12 +16,13 @@ namespace MenuReporteria.Services
 
         public CuentasPorCobrarService(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
         }
 
-        public List<string> ObtenerZonas()
+        public List<FiltroOpcion> ObtenerZonas()
         {
-            var zonas = new List<string>();
+            var zonas = new List<FiltroOpcion>();
             using (var connection = new SqlConnection(_connectionString))
             {
                 var query = "SELECT DISTINCT zo_codigo FROM prbdclie WHERE zo_codigo IS NOT NULL ORDER BY zo_codigo";
@@ -30,7 +33,15 @@ namespace MenuReporteria.Services
                     {
                         while (reader.Read())
                         {
-                            zonas.Add(reader["zo_codigo"].ToString());
+                            var codigo = reader["zo_codigo"].ToString();
+                            if (!string.IsNullOrWhiteSpace(codigo))
+                            {
+                                zonas.Add(new FiltroOpcion
+                                {
+                                    Valor = codigo,
+                                    Texto = codigo
+                                });
+                            }
                         }
                     }
                 }
@@ -38,12 +49,15 @@ namespace MenuReporteria.Services
             return zonas;
         }
 
-        public List<string> ObtenerClientes()
+        public List<FiltroOpcion> ObtenerClientes()
         {
-            var clientes = new List<string>();
+            var clientes = new List<FiltroOpcion>();
             using (var connection = new SqlConnection(_connectionString))
             {
-                var query = "SELECT DISTINCT cl_codigo FROM prbdclie WHERE cl_codigo IS NOT NULL ORDER BY cl_codigo";
+                var query = @"SELECT DISTINCT cl_codigo, ISNULL(cl_nombre, '') AS cl_nombre
+                               FROM prbdclie
+                               WHERE cl_codigo IS NOT NULL
+                               ORDER BY cl_nombre, cl_codigo";
                 using (var command = new SqlCommand(query, connection))
                 {
                     connection.Open();
@@ -51,7 +65,16 @@ namespace MenuReporteria.Services
                     {
                         while (reader.Read())
                         {
-                            clientes.Add(reader["cl_codigo"].ToString());
+                            var codigo = reader["cl_codigo"].ToString();
+                            if (!string.IsNullOrWhiteSpace(codigo))
+                            {
+                                var nombre = reader["cl_nombre"].ToString();
+                                clientes.Add(new FiltroOpcion
+                                {
+                                    Valor = codigo,
+                                    Texto = string.IsNullOrWhiteSpace(nombre) ? codigo : $"{codigo} - {nombre.Trim()}"
+                                });
+                            }
                         }
                     }
                 }
@@ -59,12 +82,15 @@ namespace MenuReporteria.Services
             return clientes;
         }
 
-        public List<string> ObtenerVendedores()
+        public List<FiltroOpcion> ObtenerVendedores()
         {
-            var vendedores = new List<string>();
+            var vendedores = new List<FiltroOpcion>();
             using (var connection = new SqlConnection(_connectionString))
             {
-                var query = "SELECT DISTINCT ve_codigo FROM prbdheco WHERE ve_codigo IS NOT NULL ORDER BY ve_codigo";
+                var query = @"SELECT DISTINCT ve_codigo
+                               FROM prbdheco
+                               WHERE ve_codigo IS NOT NULL
+                               ORDER BY ve_codigo";
                 using (var command = new SqlCommand(query, connection))
                 {
                     connection.Open();
@@ -72,7 +98,15 @@ namespace MenuReporteria.Services
                     {
                         while (reader.Read())
                         {
-                            vendedores.Add(reader["ve_codigo"].ToString());
+                            var codigo = reader["ve_codigo"].ToString();
+                            if (!string.IsNullOrWhiteSpace(codigo))
+                            {
+                                vendedores.Add(new FiltroOpcion
+                                {
+                                    Valor = codigo,
+                                    Texto = codigo
+                                });
+                            }
                         }
                     }
                 }
@@ -80,12 +114,15 @@ namespace MenuReporteria.Services
             return vendedores;
         }
 
-        public List<string> ObtenerMonedas()
+        public List<FiltroOpcion> ObtenerMonedas()
         {
-            var monedas = new List<string>();
+            var monedas = new List<FiltroOpcion>();
             using (var connection = new SqlConnection(_connectionString))
             {
-                var query = "SELECT DISTINCT mo_codigo FROM prbdheco WHERE mo_codigo IS NOT NULL ORDER BY mo_codigo";
+                var query = @"SELECT DISTINCT mo_codigo
+                               FROM prbdheco
+                               WHERE mo_codigo IS NOT NULL
+                               ORDER BY mo_codigo";
                 using (var command = new SqlCommand(query, connection))
                 {
                     connection.Open();
@@ -93,7 +130,15 @@ namespace MenuReporteria.Services
                     {
                         while (reader.Read())
                         {
-                            monedas.Add(reader["mo_codigo"].ToString());
+                            var codigo = reader["mo_codigo"].ToString();
+                            if (!string.IsNullOrWhiteSpace(codigo))
+                            {
+                                monedas.Add(new FiltroOpcion
+                                {
+                                    Valor = codigo,
+                                    Texto = codigo
+                                });
+                            }
                         }
                     }
                 }
@@ -107,70 +152,108 @@ namespace MenuReporteria.Services
 
             using (var connection = new SqlConnection(_connectionString))
             {
-                var query = @"
-                SELECT 
-                    a.hi_facafec,
-                    a.cl_codigo,
-                    a.hi_contra,
-                    a.hi_fecha,
-                    a.hi_fecpag,
-                    a.HI_CAPITAL,
-                    a.HI_INTERES,
-                    a.HI_COMISI,
-                    a.hi_mora,
-                    ISNULL(b.cl_nombre, '') as cl_nombre,
-                    ISNULL(b.cl_direc1, '') as cl_direc1,
-                    ISNULL(b.zo_codigo, '') as zo_codigo,
-                    ISNULL(a.MO_CODIGO, '') as mo_codigo,
-                    ISNULL(a.ve_codigo, '') as ve_codigo,
-                    DATEDIFF(DAY, a.hi_fecha, GETDATE()) as dias,
-                    (ISNULL(a.HI_CAPITAL, 0) + ISNULL(a.HI_INTERES, 0) + ISNULL(a.HI_COMISI, 0) + ISNULL(a.hi_mora, 0)) as total_saldo
-                FROM prbdhis as a
-                LEFT JOIN prbdclie as b ON a.cl_codigo = b.cl_codigo
-                WHERE 1=1
-            ";
+                var fechaFiltro = filtros.FechaHasta ?? filtros.FechaDesde ?? DateTime.Now;
+                var fechaFiltroParametro = fechaFiltro.ToString("yyyyMMdd");
+
+                var queryBuilder = new StringBuilder(@"
+                SELECT
+                    a.*,
+                    ISNULL(b.cl_nombre,'') AS cl_nombre,
+                    ISNULL(b.cl_tele,'') AS cl_tele,
+                    ISNULL(b.cl_BEEP,'') AS cl_BEEP,
+                    ISNULL(b.cl_CELU,'') AS cl_CELU,
+                    ISNULL(b.cl_direc1,'') AS cl_direc1,
+                    ISNULL(b.cl_direc2,'') AS cl_direc2,
+                    ISNULL(b.zo_codigo,'') AS zo_codigo,
+                    ISNULL(c.ti_codigo,'') AS ti_codigo,
+                    ISNULL(d.ti_descri,'') AS ti_descri,
+                    ISNULL(c.MO_CODIGO,'') AS MO_CODIGO,
+                    ISNULL(c.co_fecha,'') AS co_fecha,
+                    ISNULL(c.ve_codigo,'') AS ve_codigo,
+                    ISNULL(e.hi_capital,0) AS CAPITAL_INI,
+                    ISNULL(e.hi_interes,0) AS INTERES_INI
+                FROM (
+                    SELECT a.*, DATEDIFF(DAY, a.hi_FECha, GETDATE()) AS dias
+                    FROM fun_pagare(@FechaFiltro) AS a
+                    LEFT JOIN PRBDHECO AS bh ON a.hi_contra = bh.CO_CONTRA
+                    UNION ALL
+                    SELECT a.*, DATEDIFF(DAY, a.hi_FECha, GETDATE()) AS dias
+                    FROM fun_nodistri(@FechaFiltro) AS a
+                    LEFT JOIN PRBDHECO AS nh ON a.hi_contra = nh.CO_CONTRA
+                ) AS a
+                LEFT JOIN prbdclie AS b ON a.cl_codigo = b.cl_codigo AND a.COD_SUCU = b.COD_SUCU
+                LEFT JOIN PRBDHECO AS c ON a.hi_contra = c.CO_CONTRA AND a.COD_SUCU = c.COD_SUCU
+                LEFT JOIN prbdtipocontrato AS d ON c.ti_codigo = d.ti_codigo
+                LEFT JOIN prbdhis AS e ON a.HI_CONTRA = e.HI_CONTRA AND a.HI_FACAFEC = e.HI_FACAFEC AND a.CL_CODIGO = c.CL_CODIGO AND e.HI_TIPO = 'F'
+                WHERE 1 = 1
+                ");
 
                 if (filtros.FechaDesde.HasValue)
-                    query += " AND CAST(a.hi_fecha AS DATE) >= @FechaDesde";
+                {
+                    queryBuilder.AppendLine(" AND CAST(a.hi_fecha AS DATE) >= @FechaDesde");
+                }
 
                 if (filtros.FechaHasta.HasValue)
-                    query += " AND CAST(a.hi_fecha AS DATE) <= @FechaHasta";
+                {
+                    queryBuilder.AppendLine(" AND CAST(a.hi_fecha AS DATE) <= @FechaHasta");
+                }
 
-                if (!string.IsNullOrEmpty(filtros.Zona))
-                    query += " AND b.zo_codigo = @Zona";
+                if (!string.IsNullOrWhiteSpace(filtros.Zona))
+                {
+                    queryBuilder.AppendLine(" AND b.zo_codigo = @Zona");
+                }
 
-                if (!string.IsNullOrEmpty(filtros.Cliente))
-                    query += " AND a.cl_codigo = @Cliente";
+                if (!string.IsNullOrWhiteSpace(filtros.Cliente))
+                {
+                    queryBuilder.AppendLine(" AND a.cl_codigo = @Cliente");
+                }
 
-                if (!string.IsNullOrEmpty(filtros.Vendedor))
-                    query += " AND c.ve_codigo = @Vendedor";
+                if (!string.IsNullOrWhiteSpace(filtros.Vendedor))
+                {
+                    queryBuilder.AppendLine(" AND c.ve_codigo = @Vendedor");
+                }
 
-                if (!string.IsNullOrEmpty(filtros.FacturaDesde))
-                    query += " AND a.hi_contra >= @FacturaDesde";
+                if (!string.IsNullOrWhiteSpace(filtros.FacturaDesde))
+                {
+                    queryBuilder.AppendLine(" AND a.hi_contra >= @FacturaDesde");
+                }
 
-                if (!string.IsNullOrEmpty(filtros.FacturaHasta))
-                    query += " AND a.hi_contra <= @FacturaHasta";
+                if (!string.IsNullOrWhiteSpace(filtros.FacturaHasta))
+                {
+                    queryBuilder.AppendLine(" AND a.hi_contra <= @FacturaHasta");
+                }
 
                 if (filtros.CuotaDesde.HasValue)
-                    query += @" AND CONVERT(INT, REPLACE(RTRIM(a.hi_facafec), '/' + RIGHT(RTRIM(a.hi_facafec), 
-                        LEN(LTRIM(RTRIM(STR(ISNULL(c.co_canpag, '0')))))), '')) >= @CuotaDesde";
+                {
+                    queryBuilder.AppendLine(" AND TRY_CAST(LEFT(a.hi_facafec, CHARINDEX('/', a.hi_facafec + '/') - 1) AS INT) >= @CuotaDesde");
+                }
 
                 if (filtros.CuotaHasta.HasValue)
-                    query += @" AND CONVERT(INT, REPLACE(RTRIM(a.hi_facafec), '/' + RIGHT(RTRIM(a.hi_facafec), 
-                        LEN(LTRIM(RTRIM(STR(ISNULL(c.co_canpag, '0')))))), '')) <= @CuotaHasta";
+                {
+                    queryBuilder.AppendLine(" AND TRY_CAST(LEFT(a.hi_facafec, CHARINDEX('/', a.hi_facafec + '/') - 1) AS INT) <= @CuotaHasta");
+                }
 
-                if (!string.IsNullOrEmpty(filtros.Moneda))
-                    query += " AND a.mo_codigo = @Moneda";
+                if (!string.IsNullOrWhiteSpace(filtros.Moneda))
+                {
+                    queryBuilder.AppendLine(" AND c.MO_CODIGO = @Moneda");
+                }
 
                 if (filtros.OrdenMoneda == "opcion1")
-                    query += " ORDER BY a.mo_codigo, a.hi_fecha, a.hi_contra";
-                else if (filtros.OrdenMoneda == "opcion2")
-                    query += " ORDER BY a.mo_codigo, a.hi_contra, a.hi_fecha";
-                else
-                    query += " ORDER BY b.cl_nombre, a.hi_fecha, a.hi_contra";
-
-                using (var command = new SqlCommand(query, connection))
                 {
+                    queryBuilder.AppendLine(" ORDER BY c.MO_CODIGO, a.hi_fecha, a.hi_contra");
+                }
+                else if (filtros.OrdenMoneda == "opcion2")
+                {
+                    queryBuilder.AppendLine(" ORDER BY c.MO_CODIGO, a.hi_contra, a.hi_fecha");
+                }
+                else
+                {
+                    queryBuilder.AppendLine(" ORDER BY b.cl_nombre, a.hi_fecha, a.hi_contra");
+                }
+
+                using (var command = new SqlCommand(queryBuilder.ToString(), connection))
+                {
+                    command.Parameters.AddWithValue("@FechaFiltro", fechaFiltroParametro);
                     if (filtros.FechaDesde.HasValue)
                         command.Parameters.AddWithValue("@FechaDesde", filtros.FechaDesde.Value.Date);
                     if (filtros.FechaHasta.HasValue)
@@ -195,47 +278,144 @@ namespace MenuReporteria.Services
                     connection.Open();
                     using (var reader = command.ExecuteReader())
                     {
+                        var schemaTable = reader.GetSchemaTable();
+                        var columnas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                        if (schemaTable != null)
+                        {
+                            foreach (DataRow row in schemaTable.Rows)
+                            {
+                                var nombre = row["ColumnName"]?.ToString();
+                                if (!string.IsNullOrWhiteSpace(nombre))
+                                {
+                                    columnas.Add(nombre.Trim());
+                                }
+                            }
+                        }
+
+                        decimal ObtenerDecimal(string columna)
+                        {
+                            if (!columnas.Contains(columna) || reader[columna] == DBNull.Value)
+                                return 0m;
+
+                            var valor = reader[columna];
+
+                            switch (valor)
+                            {
+                                case decimal decValor:
+                                    return decValor;
+                                case double doubleValor:
+                                    return Convert.ToDecimal(doubleValor);
+                                case float floatValor:
+                                    return Convert.ToDecimal(floatValor);
+                                case int intValor:
+                                    return intValor;
+                                case long longValor:
+                                    return longValor;
+                                case short shortValor:
+                                    return shortValor;
+                            }
+
+                            var texto = valor.ToString();
+                            if (decimal.TryParse(texto, NumberStyles.Any, CultureInfo.InvariantCulture, out var resultadoInv))
+                            {
+                                return resultadoInv;
+                            }
+
+                            return decimal.TryParse(texto, NumberStyles.Any, CultureInfo.CurrentCulture, out var resultadoActual)
+                                ? resultadoActual
+                                : 0m;
+                        }
+
+                        int ObtenerEntero(string columna)
+                        {
+                            if (!columnas.Contains(columna) || reader[columna] == DBNull.Value)
+                                return 0;
+
+                            var valor = reader[columna];
+
+                            switch (valor)
+                            {
+                                case int intValor:
+                                    return intValor;
+                                case short shortValor:
+                                    return shortValor;
+                                case long longValor:
+                                    return Convert.ToInt32(longValor);
+                            }
+
+                            var texto = valor.ToString();
+                            return int.TryParse(texto, NumberStyles.Any, CultureInfo.InvariantCulture, out var resultadoInv)
+                                ? resultadoInv
+                                : int.TryParse(texto, NumberStyles.Any, CultureInfo.CurrentCulture, out var resultadoActual)
+                                    ? resultadoActual
+                                    : 0;
+                        }
+
+                        DateTime? ObtenerFecha(string columna)
+                        {
+                            if (!columnas.Contains(columna) || reader[columna] == DBNull.Value)
+                                return null;
+                            return Convert.ToDateTime(reader[columna]);
+                        }
+
+                        string ObtenerTexto(string columna)
+                        {
+                            if (!columnas.Contains(columna) || reader[columna] == DBNull.Value)
+                                return string.Empty;
+                            return reader[columna].ToString()?.Trim() ?? string.Empty;
+                        }
+
                         while (reader.Read())
                         {
-                            cuentas.Add(new CxCItem
+                            var capital = ObtenerDecimal("HI_CAPITAL");
+                            var interes = ObtenerDecimal("HI_INTERES");
+                            var comision = ObtenerDecimal("HI_COMISI");
+                            var mora = ObtenerDecimal("HI_MORA");
+                            var capitalInicial = ObtenerDecimal("CAPITAL_INI");
+                            var interesInicial = ObtenerDecimal("INTERES_INI");
+
+                            if (capital == 0 && capitalInicial > 0)
                             {
-                                Cuota = reader["hi_facafec"]?.ToString() ?? "",
-                                CodigoCliente = reader["cl_codigo"]?.ToString() ?? "",
-                                Contrato = reader["hi_contra"]?.ToString() ?? "",
-                                FechaFactura = reader["hi_fecha"] != DBNull.Value
-                                    ? Convert.ToDateTime(reader["hi_fecha"])
-                                    : DateTime.Now,
-                                FechaPago = reader["hi_fecpag"] != DBNull.Value
-                                    ? Convert.ToDateTime(reader["hi_fecpag"])
-                                    : (DateTime?)null,
-                                Capital = reader["HI_CAPITAL"] != DBNull.Value
-                                    ? Convert.ToDecimal(reader["HI_CAPITAL"])
-                                    : 0,
-                                Interes = reader["HI_INTERES"] != DBNull.Value
-                                    ? Convert.ToDecimal(reader["HI_INTERES"])
-                                    : 0,
-                                Comision = reader["HI_COMISI"] != DBNull.Value
-                                    ? Convert.ToDecimal(reader["HI_COMISI"])
-                                    : 0,
-                                Mora = reader["hi_mora"] != DBNull.Value
-                                    ? Convert.ToDecimal(reader["hi_mora"])
-                                    : 0,
-                                NombreCliente = reader["cl_nombre"]?.ToString() ?? "",
-                                Direccion = reader["cl_direc1"]?.ToString() ?? "",
-                                Zona = reader["zo_codigo"]?.ToString() ?? "",
-                                Moneda = reader["mo_codigo"]?.ToString() ?? "RD",
-                                Vendedor = reader["ve_codigo"]?.ToString() ?? "",
-                                DiasVencimiento = reader["dias"] != DBNull.Value
-                                    ? Convert.ToInt32(reader["dias"])
-                                    : 0,
-                                TotalR = reader["total_saldo"] != DBNull.Value
-                                    ? Convert.ToDecimal(reader["total_saldo"])
-                                    : 0,
-                                Fecha = reader["hi_fecha"] != DBNull.Value
-                                    ? Convert.ToDateTime(reader["hi_fecha"])
-                                    : DateTime.Now,
-                                Factura = reader["hi_contra"]?.ToString() ?? ""
-                            });
+                                capital = capitalInicial;
+                            }
+
+                            if (interes == 0 && interesInicial > 0)
+                            {
+                                interes = interesInicial;
+                            }
+
+                            var totalSaldo = ObtenerDecimal("HI_SALDO");
+                            if (totalSaldo == 0)
+                            {
+                                totalSaldo = capital + interes + comision + mora;
+                            }
+
+                            var fechaFactura = ObtenerFecha("hi_fecha") ?? DateTime.Now;
+
+                            var cuenta = new CxCItem
+                            {
+                                Cuota = ObtenerTexto("hi_facafec"),
+                                CodigoCliente = ObtenerTexto("cl_codigo"),
+                                Contrato = ObtenerTexto("hi_contra"),
+                                FechaFactura = fechaFactura,
+                                FechaPago = ObtenerFecha("hi_fecpag"),
+                                Capital = capital,
+                                Interes = interes,
+                                Comision = comision,
+                                Mora = mora,
+                                NombreCliente = ObtenerTexto("cl_nombre"),
+                                Direccion = ObtenerTexto("cl_direc1"),
+                                Zona = ObtenerTexto("zo_codigo"),
+                                Moneda = ObtenerTexto("MO_CODIGO"),
+                                Vendedor = ObtenerTexto("ve_codigo"),
+                                DiasVencimiento = ObtenerEntero("dias"),
+                                TotalR = totalSaldo,
+                                Fecha = fechaFactura,
+                                Factura = ObtenerTexto("hi_contra")
+                            };
+
+                            cuentas.Add(cuenta);
                         }
                     }
                 }

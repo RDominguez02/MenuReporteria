@@ -78,10 +78,10 @@ namespace MenuReporteria.Controllers
                 {
                     success = true,
                     totalFacturas = cuentas.Count,
-                    valorTotal = totalMonto.ToString("N2"),
+                    valorTotal = totalMonto,
                     data = new
                     {
-                        cuentas = cuentas
+                        cuentas
                     }
                 });
             }
