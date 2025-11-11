@@ -153,7 +153,7 @@
         </form>
 
         <!-- Loading Spinner -->
-        <div id="loadingSpinner" class="loading-spinner">
+        <div id="loadingSpinner" class="loading-spinner" style="display: none;">
             <div class="spinner"></div>
             <p>Cargando datos...</p>
         </div>
@@ -401,28 +401,71 @@
             const tbody = document.querySelector('.results-table tbody');
 
             if (registros && registros.length > 0) {
-                let html = '';
-                registros.forEach(registro => {
-                    const fecha = registro.fechaFactura ? new Date(registro.fechaFactura) : null;
-                    const fechaFormateada = fecha ? fecha.toLocaleDateString('es-DO') : '';
+                // Ordenar por nombre y fecha para estabilidad visual
+                const ordenados = [...registros].sort((a, b) => {
+                    const na = (a.nombreCliente || '').localeCompare(b.nombreCliente || '', 'es-DO');
+                    if (na !== 0) return na;
+                    const fa = a.fechaFactura ? new Date(a.fechaFactura).getTime() : 0;
+                    const fb = b.fechaFactura ? new Date(b.fechaFactura).getTime() : 0;
+                    return fa - fb;
+                });
 
+                // Agrupar por nombreCliente
+                const grupos = {};
+                for (const r of ordenados) {
+                    const key = r.nombreCliente || '(Sin nombre)';
+                    if (!grupos[key]) grupos[key] = [];
+                    grupos[key].push(r);
+                }
+
+                let html = '';
+                Object.keys(grupos).forEach(nombre => {
+                    const items = grupos[nombre];
+                    const direccion = items.find(x => x.direccion)?.direccion || '';
+
+                    // Encabezado de grupo
                     html += `
-                        <tr>
-                            <td>
-                                <div>${registro.nombreCliente || ''}</div>
-                                <small>${registro.direccion || ''}</small>
+                        <tr class="group-header">
+                            <td colspan="9" style="background:#f4f6f8;font-weight:600;">
+                                ${nombre} ${direccion ? ` - <small>${direccion}</small>` : ''}
                             </td>
-                            <td>${fechaFormateada}</td>
-                            <td>${registro.factura || ''}</td>
-                            <td>${fechaFormateada}</td>
-                            <td>${registro.diasVencimiento ?? 0}</td>
-                            <td>${registro.cuota || ''}</td>
-                            <td>${registro.moneda || ''}</td>
-                            <td>${registro.zona || ''}</td>
-                            <td style="text-align: right;">${parseFloat(registro.totalR || 0).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        </tr>
+                    `;
+
+                    // Filas del grupo
+                    let subtotal = 0;
+                    items.forEach(registro => {
+                        const fecha = registro.fechaFactura ? new Date(registro.fechaFactura) : null;
+                        const fechaFormateada = fecha ? fecha.toLocaleDateString('es-DO') : '';
+                        const balance = parseFloat(registro.totalR || 0);
+                        subtotal += isNaN(balance) ? 0 : balance;
+
+                        html += `
+                            <tr>
+                                <td></td>
+                                <td>${fechaFormateada}</td>
+                                <td>${registro.factura || ''}</td>
+                                <td>${fechaFormateada}</td>
+                                <td>${registro.diasVencimiento ?? 0}</td>
+                                <td>${registro.cuota || ''}</td>
+                                <td>${registro.moneda || ''}</td>
+                                <td>${registro.zona || ''}</td>
+                                <td style="text-align: right;">${(balance).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                        `;
+                    });
+
+                    // Subtotal del grupo
+                    html += `
+                        <tr class="group-subtotal">
+                            <td colspan="8" style="text-align:right;font-weight:700;">Subtotal ${nombre}</td>
+                            <td style="text-align:right;font-weight:700;">
+                                ${subtotal.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
                         </tr>
                     `;
                 });
+
                 tbody.innerHTML = html;
             } else {
                 tbody.innerHTML = `
