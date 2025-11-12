@@ -183,5 +183,36 @@ namespace MenuReporteria.Controllers
                 return BadRequest("Error al exportar Excel: " + ex.Message);
             }
         }
+
+        // Modal de detalle (CxC) - usa el mismo partial que Ventas
+        [HttpGet]
+        public IActionResult CargarModalDetalleFactura(string contrato, string cliente)
+        {
+            var model = new DetalleFacturaViewModel
+            {
+                Factura = contrato
+            };
+            return PartialView("~/Views/Shared/_ModalDetalleFactura.cshtml", model);
+        }
+
+        // Datos del detalle para el modal
+        [HttpGet]
+        public IActionResult ObtenerDetalleFactura(string contrato, string cliente)
+        {
+            try
+            {
+                var detalle = _cuentasService.ObtenerDetalleFacturaCxC(contrato, cliente);
+                if (detalle == null || string.IsNullOrEmpty(detalle.Factura))
+                {
+                    return Json(new { success = false, message = "No se encontró el contrato especificado." });
+                }
+
+                return Json(new { success = true, data = detalle });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al obtener el detalle: {ex.Message}" });
+            }
+        }
     }
 }

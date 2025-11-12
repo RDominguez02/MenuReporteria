@@ -440,11 +440,8 @@ namespace MenuReporteria.Services
                         c.ve_codigo,
                         c.ti_codigo,
                         c.co_canpag,
-                        c.co_valor,
-                        c.co_interes,
                         b.cl_codigo,
                         b.cl_nombre,
-                        b.cl_rnc,
                         b.cl_direc1,
                         b.cl_tele,
                         b.zo_codigo,
@@ -474,16 +471,13 @@ namespace MenuReporteria.Services
                             detalle.CantidadCuotas = reader["co_canpag"] != DBNull.Value
                                 ? Convert.ToInt32(reader["co_canpag"])
                                 : 0;
-                            detalle.ValorContrato = reader["co_valor"] != DBNull.Value
-                                ? Convert.ToDecimal(reader["co_valor"])
-                                : 0;
-                            detalle.InteresTotal = reader["co_interes"] != DBNull.Value
-                                ? Convert.ToDecimal(reader["co_interes"])
-                                : 0;
+                            // Valores de contrato no disponibles en este esquema actual
+                            detalle.ValorContrato = 0;
+                            detalle.InteresTotal = 0;
 
                             detalle.ClienteCodigo = reader["cl_codigo"]?.ToString() ?? "";
                             detalle.ClienteNombre = reader["cl_nombre"]?.ToString() ?? "";
-                            detalle.ClienteRnc = reader["cl_rnc"]?.ToString() ?? "";
+                            detalle.ClienteRnc = "";
                             detalle.ClienteDireccion = reader["cl_direc1"]?.ToString() ?? "";
                             detalle.ClienteTelefono = reader["cl_tele"]?.ToString() ?? "";
                             detalle.Zona = reader["zo_codigo"]?.ToString() ?? "";
@@ -547,6 +541,56 @@ namespace MenuReporteria.Services
             }
 
             return detalle;
+        }
+
+        public DetalleFacturaViewModel ObtenerDetalleFacturaCxC(string numeroContrato, string codigoCliente)
+        {
+            // Reutilizamos el detalle ya existente y lo mapeamos al layout del modal de ventas
+            var detalleCxC = ObtenerDetalleCuenta(numeroContrato, codigoCliente);
+
+            var vm = new DetalleFacturaViewModel
+            {
+                Factura = detalleCxC.Contrato,
+                Fecha = detalleCxC.FechaContrato,
+                Vendedor = detalleCxC.Vendedor,
+                Moneda = detalleCxC.Moneda,
+                Tasa = 1m, // Si no hay tasa disponible para CxC, dejamos 1
+
+                ClienteCodigo = detalleCxC.ClienteCodigo,
+                ClienteNombre = detalleCxC.ClienteNombre,
+                ClienteRnc = detalleCxC.ClienteRnc,
+                ClienteDireccion = detalleCxC.ClienteDireccion,
+                ClienteTelefono = detalleCxC.ClienteTelefono
+            };
+
+            // Mapear cuotas como "productos" para aprovechar el mismo modal
+            decimal montoBruto = 0m;
+            foreach (var cuota in detalleCxC.Cuotas)
+            {
+                var totalCuota = cuota.Total;
+                montoBruto += totalCuota;
+
+                vm.Productos.Add(new ProductoFacturaItem
+                {
+                    CodigoFicha = cuota.Cuota,
+                    Cantidad = 1,
+                    UnidadMedida = "CUOTA",
+                    Descripcion = $"Cuota {cuota.Cuota} - Vence: {cuota.FechaVencimiento:dd/MM/yyyy}",
+                    PrecioUnitario = totalCuota,
+                    Itbis = 0,
+                    Total = totalCuota
+                });
+            }
+
+            vm.MontoBruto = montoBruto;
+            vm.Impuesto17 = 0;
+            vm.Itbis18 = 0;
+            vm.Descuento = 0;
+            vm.Subtotal = montoBruto;
+            vm.TotalItbis = 0;
+            vm.MontoNeto = montoBruto;
+
+            return vm;
         }
     }
 }

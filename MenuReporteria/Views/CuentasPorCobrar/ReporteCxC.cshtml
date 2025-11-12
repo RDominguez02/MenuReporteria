@@ -442,7 +442,9 @@
 
                         html += `
                             <tr>
-                                <td></td>
+                                <td>
+                                    <button class="btn-ver-factura" onclick="abrirModalFacturaCxC('${registro.factura}', '${registro.codigoCliente || ''}')">👁️ Ver</button>
+                                </td>
                                 <td>${fechaFormateada}</td>
                                 <td>${registro.factura || ''}</td>
                                 <td>${fechaFormateada}</td>
@@ -579,6 +581,47 @@
             });
         });
 
+        // Modal: abrir usando endpoints de CxC reutilizando el mismo partial y JS
+        function abrirModalFacturaCxC(contrato, cliente) {
+            const modal = document.getElementById('modalFactura');
+            document.body.style.overflow = 'hidden';
+
+            modal.innerHTML = `
+                <div class="modal-factura-content" style="display:flex;align-items:center;justify-content:center;height:200px;">
+                    <div class="spinner"></div>
+                </div>
+            `;
+            modal.classList.add('active');
+
+            fetch(`/CuentasPorCobrar/CargarModalDetalleFactura?contrato=${encodeURIComponent(contrato)}&cliente=${encodeURIComponent(cliente)}`)
+                .then(r => r.text())
+                .then(html => {
+                    modal.innerHTML = html;
+                    // Cargar datos reales para el modal
+                    fetch(`/CuentasPorCobrar/ObtenerDetalleFactura?contrato=${encodeURIComponent(contrato)}&cliente=${encodeURIComponent(cliente)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                poblarModalConDatos(data.data);
+                            } else {
+                                mostrarErrorModal(data.message || 'Error al cargar el detalle');
+                            }
+                        })
+                        .catch(() => mostrarErrorModal('Error al conectar con el servidor'));
+                })
+                .catch(() => {
+                    modal.innerHTML = `
+                        <div class="modal-factura-content" style="padding:40px;text-align:center;">
+                            <h3 style="color:#e74c3c;">⚠️ Error al cargar la vista</h3>
+                            <p>No se pudo cargar el detalle del contrato.</p>
+                            <div style="margin-top:20px;">
+                                <button class="btn-modal btn-modal-secondary" onclick="cerrarModalFactura()">Cerrar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
         // Inicializar paginación si hay datos al cargar
         @if (Model?.Items != null && Model.Items.Count > 0)
         {
@@ -588,4 +631,7 @@
                 </text>
         }
     </script>
+    <!-- Contenedor del modal (reutilizado) -->
+    <div id="modalFactura" class="modal-factura"></div>
+    <script src="~/js/modal-factura.js"></script>
 </body>
