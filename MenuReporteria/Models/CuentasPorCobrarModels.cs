@@ -115,4 +115,6 @@ namespace MenuReporteria.Models
         public string Valor { get; set; } = string.Empty;
         public string Texto { get; set; } = string.Empty;
     }
+
+
 }

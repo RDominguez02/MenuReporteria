@@ -554,7 +554,7 @@ namespace MenuReporteria.Services
                 Fecha = detalleCxC.FechaContrato,
                 Vendedor = detalleCxC.Vendedor,
                 Moneda = detalleCxC.Moneda,
-                Tasa = 1m, // Si no hay tasa disponible para CxC, dejamos 1
+                Tasa = 1m,
 
                 ClienteCodigo = detalleCxC.ClienteCodigo,
                 ClienteNombre = detalleCxC.ClienteNombre,
@@ -563,32 +563,94 @@ namespace MenuReporteria.Services
                 ClienteTelefono = detalleCxC.ClienteTelefono
             };
 
-            // Mapear cuotas como "productos" para aprovechar el mismo modal
-            decimal montoBruto = 0m;
-            foreach (var cuota in detalleCxC.Cuotas)
+            // Obtener productos reales del contrato de CxC
+            using (var connection = new SqlConnection(_connectionString))
             {
-                var totalCuota = cuota.Total;
-                montoBruto += totalCuota;
+                connection.Open();
 
-                vm.Productos.Add(new ProductoFacturaItem
+                var queryProductos = @"
+            SELECT 
+                A.DE_CANTID,
+                A.DE_UNIDAD,
+                A.AR_CODIGO,
+                A.DE_DESCRI,
+                A.DE_PRECIO,
+                A.DE_ITBIS18,
+                A.DE_ITBIS08,
+                (A.DE_CANTID * A.DE_PRECIO) as Total,
+                A.ar_chasis,
+                A.ar_ano,
+                A.ar_motor,
+                A.ar_modelo,
+                A.ar_color,
+                A.ar_placa,
+                A.ar_matri,
+                A.ar_marca,
+                ISNULL(B.AR_DESCRI, '') as AR_DESCRI
+            FROM IVBDDEPE A
+            LEFT JOIN orlando.dbo.IVBDVEHICULO B ON A.AR_CODIGO = B.AR_CODIGO
+            WHERE A.DE_FACTURA = @Factura
+            ORDER BY A.de_id
+        ";
+
+                using (var cmdProductos = new SqlCommand(queryProductos, connection))
                 {
-                    CodigoFicha = cuota.Cuota,
-                    Cantidad = 1,
-                    UnidadMedida = "CUOTA",
-                    Descripcion = $"Cuota {cuota.Cuota} - Vence: {cuota.FechaVencimiento:dd/MM/yyyy}",
-                    PrecioUnitario = totalCuota,
-                    Itbis = 0,
-                    Total = totalCuota
-                });
-            }
+                    cmdProductos.Parameters.AddWithValue("@Factura", numeroContrato);
 
-            vm.MontoBruto = montoBruto;
-            vm.Impuesto17 = 0;
-            vm.Itbis18 = 0;
-            vm.Descuento = 0;
-            vm.Subtotal = montoBruto;
-            vm.TotalItbis = 0;
-            vm.MontoNeto = montoBruto;
+                    using (var reader = cmdProductos.ExecuteReader())
+                    {
+                        decimal montoBruto = 0m;
+                        decimal totalItbis = 0m;
+
+                        while (reader.Read())
+                        {
+                            var producto = new ProductoFacturaItem
+                            {
+                                CodigoFicha = reader["AR_CODIGO"]?.ToString() ?? "",
+                                Cantidad = reader["DE_CANTID"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["DE_CANTID"])
+                                    : 0,
+                                UnidadMedida = reader["DE_UNIDAD"]?.ToString() ?? "UD",
+                                Descripcion = reader["DE_DESCRI"]?.ToString() ??
+                                             reader["AR_DESCRI"]?.ToString() ?? "",
+                                PrecioUnitario = reader["DE_PRECIO"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["DE_PRECIO"])
+                                    : 0,
+                                Itbis = reader["DE_ITBIS18"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["DE_ITBIS18"])
+                                    : (reader["DE_ITBIS08"] != DBNull.Value
+                                        ? Convert.ToDecimal(reader["DE_ITBIS08"])
+                                        : 0),
+                                Total = reader["Total"] != DBNull.Value
+                                    ? Convert.ToDecimal(reader["Total"])
+                                    : 0,
+                                // Datos del chasis
+                                Chasis = reader["ar_chasis"]?.ToString() ?? "",
+                                Ano = reader["ar_ano"]?.ToString() ?? "",
+                                Motor = reader["ar_motor"]?.ToString() ?? "",
+                                Modelo = reader["ar_modelo"]?.ToString() ?? "",
+                                Color = reader["ar_color"]?.ToString() ?? "",
+                                Placa = reader["ar_placa"]?.ToString() ?? "",
+                                Matricula = reader["ar_matri"]?.ToString() ?? "",
+                                Marca = reader["ar_marca"]?.ToString() ?? ""
+                            };
+
+                            vm.Productos.Add(producto);
+                            montoBruto += producto.Total;
+                            totalItbis += producto.Itbis;
+                        }
+
+                        // Calcular totales
+                        vm.MontoBruto = montoBruto;
+                        vm.Impuesto17 = 0;
+                        vm.Itbis18 = totalItbis;
+                        vm.Descuento = 0;
+                        vm.Subtotal = montoBruto;
+                        vm.TotalItbis = totalItbis;
+                        vm.MontoNeto = montoBruto + totalItbis;
+                    }
+                }
+            }
 
             return vm;
         }

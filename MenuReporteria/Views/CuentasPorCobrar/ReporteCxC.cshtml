@@ -246,8 +246,9 @@
     <script>
         // Variables de paginación
         let todosLosRegistros = [];
+        let gruposClientes = []; // Nuevo: almacenar grupos
         let paginaActual = 1;
-        let registrosPorPagina = 25;
+        let registrosPorPagina = 10; // Ahora son grupos, no registros
 
         // Toggle filtros
         function toggleFiltros() {
@@ -294,6 +295,10 @@
                 if (data.success) {
                     // Guardar todos los registros
                     todosLosRegistros = data.data.cuentas || [];
+
+                    // Agrupar por cliente
+                    agruparPorCliente();
+
                     actualizarResumen(data);
                     mostrarPagina(1);
                 } else {
@@ -312,7 +317,35 @@
             });
         }
 
-        // Cambiar registros por página
+        // Agrupar registros por cliente (nombre + dirección)
+        function agruparPorCliente() {
+            const grupos = {};
+
+            // Ordenar registros primero
+            const ordenados = [...todosLosRegistros].sort((a, b) => {
+                const na = (a.nombreCliente || '').localeCompare(b.nombreCliente || '', 'es-DO');
+                if (na !== 0) return na;
+                const fa = a.fechaFactura ? new Date(a.fechaFactura).getTime() : 0;
+                const fb = b.fechaFactura ? new Date(b.fechaFactura).getTime() : 0;
+                return fa - fb;
+            });
+
+            // Agrupar por nombre de cliente
+            for (const r of ordenados) {
+                const key = r.nombreCliente || '(Sin nombre)';
+                if (!grupos[key]) grupos[key] = [];
+                grupos[key].push(r);
+            }
+
+            // Convertir a array de grupos
+            gruposClientes = Object.keys(grupos).map(nombre => ({
+                nombre: nombre,
+                direccion: grupos[nombre].find(x => x.direccion)?.direccion || '',
+                items: grupos[nombre]
+            }));
+        }
+
+        // Cambiar registros por página (ahora grupos)
         function cambiarRegistrosPorPagina() {
             registrosPorPagina = parseInt(document.getElementById('recordsPerPage').value);
             paginaActual = 1;
@@ -325,16 +358,16 @@
 
             const inicio = (pagina - 1) * registrosPorPagina;
             const fin = inicio + registrosPorPagina;
-            const registrosPagina = todosLosRegistros.slice(inicio, fin);
+            const gruposPagina = gruposClientes.slice(inicio, fin);
 
-            actualizarTabla(registrosPagina);
+            actualizarTabla(gruposPagina);
             actualizarInfoPaginacion(inicio, fin);
             generarBotonesPaginacion();
         }
 
         // Actualizar información de paginación
         function actualizarInfoPaginacion(inicio, fin) {
-            const total = todosLosRegistros.length;
+            const total = gruposClientes.length;
             document.getElementById('rangoInicio').textContent = total > 0 ? inicio + 1 : 0;
             document.getElementById('rangoFin').textContent = Math.min(fin, total);
             document.getElementById('totalRegistrosPagina').textContent = total;
@@ -346,7 +379,7 @@
 
         // Generar botones de paginación
         function generarBotonesPaginacion() {
-            const totalPaginas = Math.ceil(todosLosRegistros.length / registrosPorPagina);
+            const totalPaginas = Math.ceil(gruposClientes.length / registrosPorPagina);
             const contenedorTop = document.getElementById('paginationControls');
             const contenedorBottom = document.getElementById('paginationControlsBottom');
 
@@ -396,37 +429,23 @@
             contenedorBottom.innerHTML = html;
         }
 
-        // Actualizar tabla con datos
-        function actualizarTabla(registros) {
+        // Actualizar tabla con datos AGRUPADOS
+        function actualizarTabla(grupos) {
             const tbody = document.querySelector('.results-table tbody');
 
-            if (registros && registros.length > 0) {
-                // Ordenar por nombre y fecha para estabilidad visual
-                const ordenados = [...registros].sort((a, b) => {
-                    const na = (a.nombreCliente || '').localeCompare(b.nombreCliente || '', 'es-DO');
-                    if (na !== 0) return na;
-                    const fa = a.fechaFactura ? new Date(a.fechaFactura).getTime() : 0;
-                    const fb = b.fechaFactura ? new Date(b.fechaFactura).getTime() : 0;
-                    return fa - fb;
-                });
-
-                // Agrupar por nombreCliente
-                const grupos = {};
-                for (const r of ordenados) {
-                    const key = r.nombreCliente || '(Sin nombre)';
-                    if (!grupos[key]) grupos[key] = [];
-                    grupos[key].push(r);
-                }
-
+            if (grupos && grupos.length > 0) {
                 let html = '';
-                Object.keys(grupos).forEach(nombre => {
-                    const items = grupos[nombre];
-                    const direccion = items.find(x => x.direccion)?.direccion || '';
+                let totalGeneralBalance = 0;
+
+                grupos.forEach(grupo => {
+                    const nombre = grupo.nombre;
+                    const direccion = grupo.direccion;
+                    const items = grupo.items;
 
                     // Encabezado de grupo
                     html += `
                         <tr class="group-header">
-                            <td colspan="9" style="background:#f4f6f8;font-weight:600;">
+                            <td colspan="9" style="background:#f4f6f8;font-weight:700;">
                                 ${nombre} ${direccion ? ` - <small>${direccion}</small>` : ''}
                             </td>
                         </tr>
@@ -445,14 +464,14 @@
                                 <td>
                                     <button class="btn-ver-factura" onclick="abrirModalFacturaCxC('${registro.factura}', '${registro.codigoCliente || ''}')">👁️ Ver</button>
                                 </td>
-                                <td>${fechaFormateada}</td>
-                                <td>${registro.factura || ''}</td>
-                                <td>${fechaFormateada}</td>
-                                <td>${registro.diasVencimiento ?? 0}</td>
-                                <td>${registro.cuota || ''}</td>
-                                <td>${registro.moneda || ''}</td>
-                                <td>${registro.zona || ''}</td>
-                                <td style="text-align: right;">${(balance).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td style="font-weight:600;">${fechaFormateada}</td>
+                                <td style="font-weight:600;">${registro.factura || ''}</td>
+                                <td style="font-weight:600;">${fechaFormateada}</td>
+                                <td style="font-weight:600;">${registro.diasVencimiento ?? 0}</td>
+                                <td style="font-weight:600;">${registro.cuota || ''}</td>
+                                <td style="font-weight:600;">${registro.moneda || ''}</td>
+                                <td style="font-weight:600;">${registro.zona || ''}</td>
+                                <td style="text-align: right;font-weight:600;">${(balance).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                         `;
                     });
@@ -466,7 +485,19 @@
                             </td>
                         </tr>
                     `;
+
+                    totalGeneralBalance += subtotal;
                 });
+
+                // Total general de la página
+                html += `
+                    <tr class="group-total">
+                        <td colspan="8" style="text-align:right;font-weight:700;background:#e8e8e8;">Total Página</td>
+                        <td style="text-align:right;font-weight:700;background:#e8e8e8;">
+                            ${totalGeneralBalance.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </td>
+                    </tr>
+                `;
 
                 tbody.innerHTML = html;
             } else {
@@ -484,14 +515,15 @@
 
         // Actualizar resumen (ahora en el header)
         function actualizarResumen(data) {
-            document.getElementById('totalRegistros').textContent = data.totalFacturas || 0;
+            // Mostrar total de grupos, no registros
+            document.getElementById('totalRegistros').textContent = gruposClientes.length;
             const totalMonto = Number(data.valorTotal || 0);
             document.getElementById('totalMonto').textContent = 'RD$ ' + totalMonto.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
 
         // Imprimir reporte
         function imprimirReporte() {
-            if (todosLosRegistros.length === 0) {
+            if (gruposClientes.length === 0) {
                 alert('⚠️ No hay datos cargados para imprimir. Por favor, carga el reporte primero.');
                 return;
             }
@@ -532,7 +564,7 @@
 
         // Exportar reporte
         function exportarReporte() {
-            if (todosLosRegistros.length === 0) {
+            if (gruposClientes.length === 0) {
                 alert('⚠️ No hay datos cargados para exportar. Por favor, carga el reporte primero.');
                 return;
             }
@@ -581,7 +613,7 @@
             });
         });
 
-        // Modal: abrir usando endpoints de CxC reutilizando el mismo partial y JS
+        // Modal: abrir usando endpoints de CxC
         function abrirModalFacturaCxC(contrato, cliente) {
             const modal = document.getElementById('modalFactura');
             document.body.style.overflow = 'hidden';
@@ -597,7 +629,6 @@
                 .then(r => r.text())
                 .then(html => {
                     modal.innerHTML = html;
-                    // Cargar datos reales para el modal
                     fetch(`/CuentasPorCobrar/ObtenerDetalleFactura?contrato=${encodeURIComponent(contrato)}&cliente=${encodeURIComponent(cliente)}`)
                         .then(res => res.json())
                         .then(data => {
@@ -623,13 +654,16 @@
         }
 
         // Inicializar paginación si hay datos al cargar
-        @if (Model?.Items != null && Model.Items.Count > 0)
-        {
-                <text>
-                        todosLosRegistros = @Html.Raw(Json.Serialize(Model.Items));
-                mostrarPagina(1);
-                </text>
-        }
+        window.addEventListener('load', function() {
+            @if (Model?.Items != null && Model.Items.Count > 0)
+            {
+                    <text>
+                    todosLosRegistros = @Html.Raw(Json.Serialize(Model.Items));
+                    agruparPorCliente();
+                    mostrarPagina(1);
+                    </text>
+            }
+        });
     </script>
     <!-- Contenedor del modal (reutilizado) -->
     <div id="modalFactura" class="modal-factura"></div>

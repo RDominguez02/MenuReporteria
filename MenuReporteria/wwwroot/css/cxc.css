@@ -333,7 +333,7 @@ body {
 
     .results-table td {
         padding: 1rem;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 3px solid var(--border);
     }
 
     .results-table tbody tr:hover {
