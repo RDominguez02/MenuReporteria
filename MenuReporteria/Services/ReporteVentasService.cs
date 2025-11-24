@@ -484,6 +484,96 @@ namespace MenuReporteria.Services
 
             return chasisList;
         }
+        // ============ NUEVOS MÉTODOS PARA BÚSQUEDA OPTIMIZADA DE CLIENTES ============
+
+        /// <summary>
+        /// Clase auxiliar para resultados paginados de clientes
+        /// </summary>
+        public class ResultadoClientesPaginados
+        {
+            public List<dynamic> Clientes { get; set; } = new List<dynamic>();
+            public int Total { get; set; }
+            public int TotalPaginas { get; set; }
+        }
+
+        /// <summary>
+        /// Obtiene clientes de forma paginada y filtrada desde la base de datos
+        /// </summary>
+        public ResultadoClientesPaginados ObtenerClientesPaginados(string filtro, int pagina, int registrosPorPagina)
+        {
+            var resultado = new ResultadoClientesPaginados();
+            filtro = filtro?.Trim() ?? "";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                // Primero obtener el total de registros
+                var queryTotal = @"
+                    SELECT COUNT(*) as total
+                    FROM CCBDCLIE
+                    WHERE (cl_codigo LIKE @Filtro OR cl_nombre LIKE @Filtro)
+                      AND cl_codigo IS NOT NULL 
+                      AND cl_codigo <> ''
+                      AND cl_nombre IS NOT NULL
+                      AND cl_nombre <> ''
+                ";
+
+                using (var command = new SqlCommand(queryTotal, connection))
+                {
+                    command.Parameters.AddWithValue("@Filtro", "%" + filtro + "%");
+                    connection.Open();
+                    resultado.Total = (int)command.ExecuteScalar();
+                    connection.Close();
+                }
+
+                // Calcular total de páginas
+                resultado.TotalPaginas = (int)Math.Ceiling((double)resultado.Total / registrosPorPagina);
+
+                // Validar página
+                if (pagina < 1) pagina = 1;
+                if (pagina > resultado.TotalPaginas && resultado.TotalPaginas > 0) pagina = resultado.TotalPaginas;
+
+                // Obtener registros paginados
+                int offset = (pagina - 1) * registrosPorPagina;
+
+                var query = @"
+                    SELECT 
+                        cl_codigo as codigo,
+                        cl_nombre as nombre
+                    FROM CCBDCLIE
+                    WHERE (cl_codigo LIKE @Filtro OR cl_nombre LIKE @Filtro)
+                      AND cl_codigo IS NOT NULL 
+                      AND cl_codigo <> ''
+                      AND cl_nombre IS NOT NULL
+                      AND cl_nombre <> ''
+                    ORDER BY cl_nombre
+                    OFFSET @Offset ROWS
+                    FETCH NEXT @RegistrosPorPagina ROWS ONLY
+                ";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Filtro", "%" + filtro + "%");
+                    command.Parameters.AddWithValue("@Offset", offset);
+                    command.Parameters.AddWithValue("@RegistrosPorPagina", registrosPorPagina);
+
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            resultado.Clientes.Add(new
+                            {
+                                codigo = reader["codigo"].ToString(),
+                                nombre = reader["nombre"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            return resultado;
+        }
+
 
         // Clase auxiliar para múltiples chasis
         public class ChasisInfo
