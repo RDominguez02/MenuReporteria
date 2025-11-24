@@ -53,104 +53,158 @@
             </div>
         </div>
 
-        <!-- Filtros -->
-        <form id="filtrosForm" class="filters-section" method="post" action="@Url.Action("Generar", "CuentasPorCobrar")">
-            @Html.AntiForgeryToken()
-            <div class="filters-title">Criterios de Búsqueda</div>
-            <div class="filters-grid">
-                <div class="filter-group">
-                    <label for="fechaDesde">Desde la Fecha de Corte</label>
-                    <input type="date" id="fechaDesde" name="fechaDesde" value="@Model?.Filtros?.FechaDesde?.ToString("yyyy-MM-dd")">
-                </div>
-                <div class="filter-group">
-                    <label for="fechaHasta">Hasta la Fecha De Corte</label>
-                    <input type="date" id="fechaHasta" name="fechaHasta" value="@Model?.Filtros?.FechaHasta?.ToString("yyyy-MM-dd")">
-                </div>
-                <div class="filter-group">
-                    <label for="zona">Para la Zona</label>
-                    <select id="zona" name="zona">
-                        <option value="">Seleccionar...</option>
-                        @if (Model?.Filtros?.ZonasDisponibles != null)
-                        {
-                            foreach (var zona in Model.Filtros.ZonasDisponibles)
-                            {
-                                @* <option value="@zona.Valor" @(string.Equals(Model?.Filtros?.Zona, zona.Valor, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null)>@zona.Texto</option> *@
-                            }
-                        }
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="cliente">Para el Cliente</label>
-                    <select id="cliente" name="cliente">
-                        <option value="">Seleccionar...</option>
-                        @if (Model?.Filtros?.ClientesDisponibles != null)
-                        {
-                            foreach (var cliente in Model.Filtros.ClientesDisponibles)
-                            {
-                                @* <option value="@cliente.Valor" @(string.Equals(Model?.Filtros?.Cliente, cliente.Valor, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null)>@cliente.Texto</option> *@
-                            }
-                        }
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="vendedor">Para el Vendedor</label>
-                    <select id="vendedor" name="vendedor">
-                        <option value="">Seleccionar...</option>
-                        @if (Model?.Filtros?.VendedoresDisponibles != null)
-                        {
-                            foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
-                            {
-                                @* <option value="@vendedor.Valor" @(string.Equals(Model?.Filtros?.Vendedor, vendedor.Valor, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null)>@vendedor.Texto</option> *@
-                            }
-                        }
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="factura">Desde la Factura</label>
-                    <input type="text" id="factura" name="factura" placeholder="Número de factura" value="@Model?.Filtros?.FacturaDesde">
-                </div>
-                <div class="filter-group">
-                    <label for="facturaHasta">Hasta la Factura</label>
-                    <input type="text" id="facturaHasta" name="facturaHasta" placeholder="Número de factura" value="@Model?.Filtros?.FacturaHasta">
-                </div>
-                <div class="filter-group">
-                    <label for="cuotaDesde">Desde la Cuota</label>
-                    <input type="number" id="cuotaDesde" name="cuotaDesde" placeholder="Número de cuota" value="@(Model?.Filtros?.CuotaDesde?.ToString() ?? string.Empty)">
-                </div>
-                <div class="filter-group">
-                    <label for="cuotaHasta">Hasta la Cuota</label>
-                    <input type="number" id="cuotaHasta" name="cuotaHasta" placeholder="Número de cuota" value="@(Model?.Filtros?.CuotaHasta?.ToString() ?? string.Empty)">
-                </div>
+       <!-- Filtros -->
+<form id="filtrosForm" class="filters-section" method="post" action="@Url.Action("Generar", "CuentasPorCobrar")">
+    @Html.AntiForgeryToken()
+    <div class="filters-title">Criterios de Búsqueda</div>
+    <div class="filters-grid">
+        <!-- Fecha Desde -->
+        <div class="filter-group">
+            <label for="fechaDesde">Desde la Fecha de Corte</label>
+            <input type="date" id="fechaDesde" name="fechaDesde" value="@Model?.Filtros?.FechaDesde?.ToString("yyyy-MM-dd")" required>
+            <small id="alertaFechas" class="alert-message" style="display:none;color:#d32f2f;">⚠️ La fecha desde no puede ser mayor que la fecha hasta</small>
+        </div>
 
-                <div class="filter-group">
-                    <label for="moneda">Para la Moneda</label>
-                    <select id="moneda" name="moneda">
-                        <option value="">Seleccionar...</option>
-                        @if (Model?.Filtros?.MonedasDisponibles != null)
-                        {
-                            foreach (var moneda in Model.Filtros.MonedasDisponibles)
-                            {
-                                @* <option value="@moneda.Valor" @(string.Equals(Model?.Filtros?.Moneda, moneda.Valor, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null)>@moneda.Texto</option> *@
-                            }
-                        }
-                    </select>
-                </div>
+        <!-- Fecha Hasta -->
+        <div class="filter-group">
+            <label for="fechaHasta">Hasta la Fecha De Corte</label>
+            <input type="date" id="fechaHasta" name="fechaHasta" value="@Model?.Filtros?.FechaHasta?.ToString("yyyy-MM-dd")" required>
+        </div>
 
-                <div class="report-type-group">
-                    <h4>Orden de Moneda</h4>
-                    <div class="report-type-options">
-                        <label>
-                            <input type="radio" name="ordenMoneda" value="opcion1" checked>
-                            Orden de Moneda + Fecha + Factura
-                        </label>
-                        <label>
-                            <input type="radio" name="ordenMoneda" value="opcion2">
-                            Orden de Moneda + Facturas + Fecha
-                        </label>
-                    </div>
-                </div>
+        <!-- Zona -->
+        <div class="filter-group">
+            <label for="zona">Para la Zona</label>
+            <select id="zona" name="zona">
+                <option value="">-- Todas --</option>
+                @if (Model?.Filtros?.ZonasDisponibles != null)
+                {
+                    foreach (var zona in Model.Filtros.ZonasDisponibles)
+                    {
+                        <option value="@zona.Valor" selected="@(string.Equals(Model?.Filtros?.Zona, zona.Valor, System.StringComparison.OrdinalIgnoreCase))">
+                            @zona.Texto
+                        </option>
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- Cliente con Modal de Búsqueda -->
+        <div class="filter-group">
+            <label for="clienteInput">Para el Cliente</label>
+            <div class="cliente-input-group">
+                <input type="text" id="clienteInput" name="cliente" placeholder="Nombre del cliente..." value="@Model?.Filtros?.Cliente">
+                <button type="button" class="btn-modal-cliente" onclick="abrirModalClientesCxC()">📋 Seleccionar</button>
             </div>
-        </form>
+        </div>
+
+        <!-- Vendedor -->
+        <div class="filter-group">
+            <label for="vendedor">Para el Vendedor</label>
+            <select id="vendedor" name="vendedor">
+                <option value="">-- Todos --</option>
+                @if (Model?.Filtros?.VendedoresDisponibles != null)
+                {
+                    foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
+                    {
+                        <option value="@vendedor.Valor" selected="@(string.Equals(Model?.Filtros?.Vendedor, vendedor.Valor, System.StringComparison.OrdinalIgnoreCase))">
+                            @vendedor.Texto
+                        </option>
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- Factura Desde -->
+        <div class="filter-group">
+            <label for="factura">Desde la Factura</label>
+            <input type="text" id="factura" name="factura" placeholder="Número de factura" value="@Model?.Filtros?.FacturaDesde">
+        </div>
+
+        <!-- Factura Hasta -->
+        <div class="filter-group">
+            <label for="facturaHasta">Hasta la Factura</label>
+            <input type="text" id="facturaHasta" name="facturaHasta" placeholder="Número de factura" value="@Model?.Filtros?.FacturaHasta">
+        </div>
+
+        <!-- Cuota Desde -->
+        <div class="filter-group">
+            <label for="cuotaDesde">Desde la Cuota</label>
+            <input type="number" id="cuotaDesde" name="cuotaDesde" placeholder="Número de cuota" value="@(Model?.Filtros?.CuotaDesde?.ToString() ?? string.Empty)">
+        </div>
+
+        <!-- Cuota Hasta -->
+        <div class="filter-group">
+            <label for="cuotaHasta">Hasta la Cuota</label>
+            <input type="number" id="cuotaHasta" name="cuotaHasta" placeholder="Número de cuota" value="@(Model?.Filtros?.CuotaHasta?.ToString() ?? string.Empty)">
+        </div>
+
+        <!-- Moneda -->
+        <div class="filter-group">
+            <label for="moneda">Para la Moneda</label>
+            <select id="moneda" name="moneda">
+                <option value="">-- Todas --</option>
+                @if (Model?.Filtros?.MonedasDisponibles != null)
+                {
+                    foreach (var moneda in Model.Filtros.MonedasDisponibles)
+                    {
+                        <option value="@moneda.Valor" selected="@(string.Equals(Model?.Filtros?.Moneda, moneda.Valor, System.StringComparison.OrdinalIgnoreCase))">
+                            @moneda.Texto
+                        </option>
+                    }
+                }
+            </select>
+        </div>
+
+        <!-- Separador -->
+        <div class="filter-separator"></div>
+
+        <!-- Orden de Moneda -->
+        <div class="report-type-group">
+            <h4>Orden de Moneda</h4>
+            <div class="report-type-options">
+                <label>
+                    <input type="radio" name="ordenMoneda" value="opcion1" checked>
+                    Orden de Moneda + Fecha + Factura
+                </label>
+                <label>
+                    <input type="radio" name="ordenMoneda" value="opcion2">
+                    Orden de Moneda + Facturas + Fecha
+                </label>
+            </div>
+        </div>
+    </div>
+</form>
+
+    <!-- Modal Seleccionar Clientes CxC -->
+    <div id="modalClientesCxC" class="modal-overlay" style="display:none;">
+        <div class="modal-content modal-clientes">
+            <div class="modal-header">
+                <h2>Seleccionar Cliente</h2>
+                <button type="button" class="btn-close" onclick="cerrarModalClientesCxC()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-buscar">
+                    <input 
+                        type="text" 
+                        id="buscarClienteCxC" 
+                        placeholder="Escribe código o nombre (mín. 2 caracteres)..."
+                        onkeyup="buscarClientesCxCDebounce(this.value)"
+                        onkeypress="buscarClientesCxCEnter(event, this.value)"
+                    >
+                    <small style="color:#666;display:block;margin-top:5px;">
+                        💡 Busca automáticamente mientras escribes o presiona Enter para búsqueda inmediata
+                    </small>
+                </div>
+                <div id="listaClientesCxC" class="lista-clientes">
+                    <p style="text-align:center;color:#999;">Ingresa al menos 2 caracteres para buscar</p>
+                </div>
+                <div id="paginacionClientesCxC" class="paginacion-clientes-container"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancelar" onclick="cerrarModalClientesCxC()">Cancelar</button>
+            </div>
+        </div>
+    </div>
 
         <!-- Loading Spinner -->
         <div id="loadingSpinner" class="loading-spinner" style="display: none;">
@@ -664,6 +718,178 @@
                     </text>
             }
         });
+
+            // ============ BÚSQUEDA DE CLIENTES OPTIMIZADA PARA CXC ============
+
+    // Variables de búsqueda de clientes CxC
+    let clientesDisponiblesCxC = [];
+    let paginaClientesCxCActual = 1;
+    let totalClientesCxCPaginas = 0;
+    let filtroClienteCxCActual = "";
+    let timeoutBusquedaCxC = null;
+
+    // Modal Clientes CxC
+    function abrirModalClientesCxC() {
+        document.getElementById('modalClientesCxC').style.display = 'flex';
+        document.getElementById('buscarClienteCxC').value = "";
+        document.getElementById('buscarClienteCxC').focus();
+        limpiarListaClientesCxC();
+        paginaClientesCxCActual = 1;
+    }
+
+    function cerrarModalClientesCxC() {
+        document.getElementById('modalClientesCxC').style.display = 'none';
+        limpiarListaClientesCxC();
+    }
+
+    function limpiarListaClientesCxC() {
+        document.getElementById('listaClientesCxC').innerHTML = 
+            '<p style="text-align:center;color:#999;">Ingresa al menos 2 caracteres para buscar</p>';
+        document.getElementById('paginacionClientesCxC').innerHTML = '';
+    }
+
+    // Búsqueda con debounce (500ms)
+    function buscarClientesCxCDebounce(valor) {
+        if (timeoutBusquedaCxC) {
+            clearTimeout(timeoutBusquedaCxC);
+        }
+
+        if (valor.length < 2) {
+            limpiarListaClientesCxC();
+            return;
+        }
+
+        document.getElementById('listaClientesCxC').innerHTML = 
+            '<p style="text-align:center;color:#999;">🔍 Buscando...</p>';
+
+        timeoutBusquedaCxC = setTimeout(() => {
+            cargarClientesCxC(valor, 1);
+        }, 500);
+    }
+
+    // Buscar al presionar Enter
+    function buscarClientesCxCEnter(event, valor) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            
+            if (timeoutBusquedaCxC) {
+                clearTimeout(timeoutBusquedaCxC);
+            }
+
+            if (valor.length < 2) {
+                alert('⚠️ Ingresa al menos 2 caracteres para buscar');
+                return;
+            }
+
+            document.getElementById('listaClientesCxC').innerHTML = 
+                '<p style="text-align:center;color:#999;">🔍 Buscando...</p>';
+            
+            cargarClientesCxC(valor, 1);
+        }
+    }
+
+    function cargarClientesCxC(filtro, pagina) {
+        filtroClienteCxCActual = filtro;
+        paginaClientesCxCActual = pagina;
+
+        fetch(`@Url.Action("ObtenerClientes", "CuentasPorCobrar")?filtro=${encodeURIComponent(filtro)}&pagina=${pagina}&registrosPorPagina=15`)
+            .then(response => response.json())
+            .then(data => {
+                clientesDisponiblesCxC = data.clientes || [];
+                totalClientesCxCPaginas = data.totalPaginas || 0;
+
+                if (clientesDisponiblesCxC.length > 0) {
+                    mostrarClientesCxC(clientesDisponiblesCxC);
+                    mostrarPaginacionClientesCxC(data.total, pagina, totalClientesCxCPaginas);
+                } else {
+                    document.getElementById('listaClientesCxC').innerHTML = 
+                        `<p style="text-align:center;color:#999;">❌ ${data.mensaje || 'No se encontraron clientes'}</p>`;
+                    document.getElementById('paginacionClientesCxC').innerHTML = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('listaClientesCxC').innerHTML = 
+                    '<p style="text-align:center;color:#d32f2f;">⚠️ Error al buscar clientes</p>';
+            });
+    }
+
+    function mostrarClientesCxC(clientes) {
+        const lista = document.getElementById('listaClientesCxC');
+        let html = '';
+        
+        clientes.forEach(cliente => {
+            html += `<div class="cliente-item" onclick="seleccionarClienteCxC('${cliente.codigo.replace(/'/g, "\\'")}', '${cliente.nombre.replace(/'/g, "\\'")}')">
+                <div class="cliente-codigo">${cliente.codigo}</div>
+                <div class="cliente-nombre">${cliente.nombre}</div>
+            </div>`;
+        });
+        
+        lista.innerHTML = html;
+    }
+
+    function mostrarPaginacionClientesCxC(total, paginaActual, totalPaginas) {
+        const contenedor = document.getElementById('paginacionClientesCxC');
+        
+        if (totalPaginas <= 1) {
+            contenedor.innerHTML = '';
+            return;
+        }
+
+        let html = `<div class="paginacion-clientes">
+            <small>Página ${paginaActual} de ${totalPaginas} (${total} clientes)</small>
+            <div class="paginacion-botones">`;
+
+        if (paginaActual > 1) {
+            html += `<button class="pag-btn" onclick="cargarClientesCxC('${filtroClienteCxCActual}', ${paginaActual - 1})">← Anterior</button>`;
+        }
+
+        for (let i = Math.max(1, paginaActual - 2); i <= Math.min(totalPaginas, paginaClientesCxCActual + 2); i++) {
+            if (i === paginaActual) {
+                html += `<button class="pag-btn active">${i}</button>`;
+            } else {
+                html += `<button class="pag-btn" onclick="cargarClientesCxC('${filtroClienteCxCActual}', ${i})">${i}</button>`;
+            }
+        }
+
+        if (paginaActual < totalPaginas) {
+            html += `<button class="pag-btn" onclick="cargarClientesCxC('${filtroClienteCxCActual}', ${paginaActual + 1})">Siguiente →</button>`;
+        }
+
+        html += `</div></div>`;
+        contenedor.innerHTML = html;
+    }
+
+    function seleccionarClienteCxC(codigo, nombre) {
+        document.getElementById('clienteInput').value = nombre;
+        cerrarModalClientesCxC();
+    }
+
+    // Validación de fechas
+    document.getElementById('fechaDesde').addEventListener('change', validarFechasCxC);
+    document.getElementById('fechaHasta').addEventListener('change', validarFechasCxC);
+
+    function validarFechasCxC() {
+        const fechaDesde = new Date(document.getElementById('fechaDesde').value);
+        const fechaHasta = new Date(document.getElementById('fechaHasta').value);
+        const alerta = document.getElementById('alertaFechas');
+
+        if (fechaDesde > fechaHasta && document.getElementById('fechaHasta').value) {
+            alerta.style.display = 'block';
+            return false;
+        } else {
+            alerta.style.display = 'none';
+            return true;
+        }
+    }
+
+    // Cerrar modal al hacer clic fuera
+    window.onclick = function(event) {
+        const modal = document.getElementById('modalClientesCxC');
+        if (event.target === modal) {
+            cerrarModalClientesCxC();
+        }
+    }
     </script>
     <!-- Contenedor del modal (reutilizado) -->
     <div id="modalFactura" class="modal-factura"></div>

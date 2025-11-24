@@ -95,6 +95,41 @@ namespace MenuReporteria.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult ObtenerClientes(string filtro = "", int pagina = 1, int registrosPorPagina = 20)
+        {
+            try
+            {
+                // Validar que el filtro tenga al menos 2 caracteres
+                if (string.IsNullOrWhiteSpace(filtro) || filtro.Length < 2)
+                {
+                    return Json(new
+                    {
+                        clientes = new List<object>(),
+                        total = 0,
+                        pagina = pagina,
+                        totalPaginas = 0,
+                        mensaje = "Ingresa al menos 2 caracteres para buscar"
+                    });
+                }
+
+                var resultado = _cuentasService.ObtenerClientesPaginados(filtro, pagina, registrosPorPagina);
+
+                return Json(new
+                {
+                    clientes = resultado.Clientes,
+                    total = resultado.Total,
+                    pagina = pagina,
+                    totalPaginas = resultado.TotalPaginas,
+                    mensaje = resultado.Total == 0 ? "No se encontraron clientes" : null
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         [HttpPost]
         public IActionResult GenerarPDF(
             DateTime? fechaDesde,
