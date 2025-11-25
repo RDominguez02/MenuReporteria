@@ -87,10 +87,14 @@ namespace MenuReporteria.Services
             var vendedores = new List<FiltroOpcion>();
             using (var connection = new SqlConnection(_connectionString))
             {
-                var query = @"SELECT DISTINCT ve_codigo
-                               FROM prbdheco
-                               WHERE ve_codigo IS NOT NULL
-                               ORDER BY ve_codigo";
+                // CAMBIO: Consultamos prbdvend en lugar de prbdheco
+                // Obtenemos Código y Nombre, asegurando que no vengan nulos
+                var query = @"SELECT VE_CODIGO, ISNULL(VE_NOMBRE, '') AS VE_NOMBRE
+                        FROM prbdvend
+                        WHERE VE_CODIGO IS NOT NULL 
+                          AND VE_CODIGO <> ''
+                        ORDER BY VE_CODIGO"; // Puedes cambiar a ORDER BY VE_NOMBRE si prefieres orden alfabético
+
                 using (var command = new SqlCommand(query, connection))
                 {
                     connection.Open();
@@ -98,13 +102,16 @@ namespace MenuReporteria.Services
                     {
                         while (reader.Read())
                         {
-                            var codigo = reader["ve_codigo"].ToString();
+                            var codigo = reader["VE_CODIGO"].ToString().Trim();
+                            var nombre = reader["VE_NOMBRE"].ToString().Trim();
+
                             if (!string.IsNullOrWhiteSpace(codigo))
                             {
                                 vendedores.Add(new FiltroOpcion
                                 {
                                     Valor = codigo,
-                                    Texto = codigo
+                                    // CAMBIO: Formato "CODIGO - NOMBRE" para mejor visualización
+                                    Texto = string.IsNullOrWhiteSpace(nombre) ? codigo : $"{nombre}"
                                 });
                             }
                         }
@@ -211,9 +218,25 @@ namespace MenuReporteria.Services
                 }
                 // --- FIN CORRECCIÓN CLIENTE ---
 
+                // Manejo de Vendedores Múltiples
                 if (!string.IsNullOrWhiteSpace(filtros.Vendedor))
                 {
-                    queryBuilder.AppendLine(" AND c.ve_codigo = @Vendedor");
+                    // Separamos los códigos por coma
+                    var listaVendedores = filtros.Vendedor.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                                          .Select(v => v.Trim())
+                                                          .ToList();
+
+                    if (listaVendedores.Count > 0)
+                    {
+                        var parametrosIn = new List<string>();
+                        for (int i = 0; i < listaVendedores.Count; i++)
+                        {
+                            parametrosIn.Add($"@Vendedor{i}");
+                        }
+
+                        // Genera: AND c.ve_codigo IN (@Vendedor0, @Vendedor1, @Vendedor2)
+                        queryBuilder.AppendLine($" AND c.ve_codigo IN ({string.Join(",", parametrosIn)})");
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(filtros.FacturaDesde))
@@ -270,7 +293,15 @@ namespace MenuReporteria.Services
                     // --- FIN CORRECCIÓN PARAMETRO ---
 
                     if (!string.IsNullOrEmpty(filtros.Vendedor))
-                        command.Parameters.AddWithValue("@Vendedor", filtros.Vendedor);
+                    {
+                        var listaVendedores = filtros.Vendedor.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                                              .Select(v => v.Trim())
+                                                              .ToList();
+                        for (int i = 0; i < listaVendedores.Count; i++)
+                        {
+                            command.Parameters.AddWithValue($"@Vendedor{i}", listaVendedores[i]);
+                        }
+                    }
                     if (!string.IsNullOrEmpty(filtros.FacturaDesde))
                         command.Parameters.AddWithValue("@FacturaDesde", filtros.FacturaDesde);
                     if (!string.IsNullOrEmpty(filtros.FacturaHasta))

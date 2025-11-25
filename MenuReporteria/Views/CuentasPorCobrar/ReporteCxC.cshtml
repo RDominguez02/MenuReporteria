@@ -98,21 +98,18 @@
         </div>
 
         <!-- Vendedor -->
-        <div class="filter-group">
-            <label for="vendedor">Para el Vendedor</label>
-            <select id="vendedor" name="vendedor">
-                <option value="">-- Todos --</option>
-                @if (Model?.Filtros?.VendedoresDisponibles != null)
-                {
-                    foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
-                    {
-                        <option value="@vendedor.Valor" selected="@(string.Equals(Model?.Filtros?.Vendedor, vendedor.Valor, System.StringComparison.OrdinalIgnoreCase))">
-                            @vendedor.Texto
-                        </option>
-                    }
-                }
-            </select>
-        </div>
+                <div class="filter-group">
+                    <label for="vendedorDisplay">Para el Vendedor</label>
+                    <div class="cliente-input-group">
+                        <input type="text" id="vendedorDisplay" readonly
+                               placeholder="-- Todos --"
+                               value="@(string.IsNullOrEmpty(Model?.Filtros?.Vendedor) ? "" : "Vendedores Seleccionados")">
+
+                        <input type="hidden" id="vendedor" name="vendedor" value="@Model?.Filtros?.Vendedor">
+
+                        <button type="button" class="btn-modal-cliente" onclick="abrirModalVendedores()">📋 Lista</button>
+                    </div>
+                </div>
 
         <!-- Factura Desde -->
         <div class="filter-group">
@@ -205,6 +202,42 @@
             </div>
         </div>
     </div>
+
+        <div id="modalVendedores" class="modal-overlay" style="display:none;">
+            <div class="modal-content modal-clientes" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Seleccionar Vendedores</h2>
+                    <button type="button" class="btn-close" onclick="cerrarModalVendedores()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="acciones-modal" style="margin-bottom: 10px; display: flex; gap: 10px;">
+                        <button type="button" onclick="marcarTodosVendedores(true)" class="btn-action btn-imprimir" style="padding: 5px 10px; font-size: 12px;">Marcar Todos</button>
+                        <button type="button" onclick="marcarTodosVendedores(false)" class="btn-action btn-retornar" style="padding: 5px 10px; font-size: 12px;">Desmarcar Todos</button>
+                    </div>
+
+                    <div id="listaVendedoresCheck" class="lista-clientes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                        @if (Model?.Filtros?.VendedoresDisponibles != null)
+                        {
+                            var seleccionados = (Model.Filtros.Vendedor ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
+                            {
+                                var isChecked = seleccionados.Contains(vendedor.Valor) ? "checked" : "";
+                                <div class="vendedor-check-item" style="padding: 5px; border-bottom: 1px solid #eee;">
+                                    <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
+                                        <input type="checkbox" class="chk-vendedor" value="@vendedor.Valor" @isChecked style="margin-right: 10px; width: auto;">
+                                        <span><strong>@vendedor.Valor</strong> - @vendedor.Texto</span>
+                                    </label>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancelar" onclick="cerrarModalVendedores()">Cancelar</button>
+                    <button type="button" class="btn-aceptar" onclick="aplicarFiltroVendedores()">Aplicar Selección</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Loading Spinner -->
         <div id="loadingSpinner" class="loading-spinner" style="display: none;">
@@ -890,6 +923,52 @@
             cerrarModalClientesCxC();
         }
     }
+
+            // --- Lógica Modal Vendedores ---
+        function abrirModalVendedores() {
+            document.getElementById('modalVendedores').style.display = 'flex';
+        }
+
+        function cerrarModalVendedores() {
+            document.getElementById('modalVendedores').style.display = 'none';
+        }
+
+        function marcarTodosVendedores(estado) {
+            const checks = document.querySelectorAll('.chk-vendedor');
+            checks.forEach(chk => chk.checked = estado);
+        }
+
+        function aplicarFiltroVendedores() {
+            const checks = document.querySelectorAll('.chk-vendedor:checked');
+            const codigos = Array.from(checks).map(c => c.value);
+
+            // Actualizar input oculto (para el backend)
+            document.getElementById('vendedor').value = codigos.join(',');
+
+            // Actualizar visualización
+            const display = document.getElementById('vendedorDisplay');
+            if (codigos.length === 0) {
+                display.value = "";
+                display.placeholder = "-- Todos --";
+            } else if (codigos.length === 1) {
+                display.value = codigos[0]; // Muestra el código si es solo uno
+            } else {
+                display.value = `${codigos.length} Vendedores seleccionados`;
+            }
+
+            cerrarModalVendedores();
+        }
+
+        // Ejecutar al cargar para mostrar el texto correcto si ya hay filtro aplicado
+        window.addEventListener('load', function() {
+            const valorActual = document.getElementById('vendedor').value;
+            if (valorActual) {
+                const cantidad = valorActual.split(',').length;
+                const display = document.getElementById('vendedorDisplay');
+                if (cantidad === 1) display.value = valorActual;
+                else display.value = `${cantidad} Vendedores seleccionados`;
+            }
+        });
     </script>
     <!-- Contenedor del modal (reutilizado) -->
     <div id="modalFactura" class="modal-factura"></div>
