@@ -230,6 +230,20 @@ namespace MenuReporteria.Controllers
             return PartialView("~/Views/Shared/_ModalDetalleFactura.cshtml", model);
         }
 
+        [HttpGet]
+        public IActionResult ObtenerRelacionPagos(string cliente)
+        {
+            try
+            {
+                var pagos = _cuentasService.ObtenerRelacionPagos(cliente);
+                return Json(new { success = true, pagos = pagos });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         // Datos del detalle para el modal
         [HttpGet]
         public IActionResult ObtenerDetalleFactura(string contrato, string cliente)

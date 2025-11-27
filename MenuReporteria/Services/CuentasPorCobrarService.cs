@@ -20,6 +20,46 @@ namespace MenuReporteria.Services
                 ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
         }
 
+        // --- NUEVO MÉTODO PARA RELACIÓN DE PAGOS ---
+        public List<PagoCxCItem> ObtenerRelacionPagos(string clienteCodigo)
+        {
+            var pagos = new List<PagoCxCItem>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                // Consultamos la tabla de recibos PRBDHERE filtrando por cliente
+                var query = @"SELECT 
+                                HE_FECHA,
+                                HE_DOCUM,
+                                HE_OBSERV,
+                                MO_CODIGO,
+                                HE_MONTO 
+                              FROM PRBDHERE 
+                              WHERE CL_CODIGO = @Cliente 
+                              ORDER BY HE_FECHA DESC";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Cliente", clienteCodigo);
+                    connection.Open();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            pagos.Add(new PagoCxCItem
+                            {
+                                Fecha = reader["HE_FECHA"] != DBNull.Value ? Convert.ToDateTime(reader["HE_FECHA"]) : DateTime.MinValue,
+                                Documento = reader["HE_DOCUM"]?.ToString() ?? "",
+                                Observacion = reader["HE_OBSERV"]?.ToString() ?? "",
+                                Moneda = reader["MO_CODIGO"]?.ToString() ?? "",
+                                Monto = reader["HE_MONTO"] != DBNull.Value ? Convert.ToDecimal(reader["HE_MONTO"]) : 0
+                            });
+                        }
+                    }
+                }
+            }
+            return pagos;
+        }
         public List<FiltroOpcion> ObtenerZonas()
         {
             var zonas = new List<FiltroOpcion>();
@@ -737,6 +777,12 @@ public class ResultadoClientesPaginados
     public int TotalPaginas { get; set; }
 }
 
-/// <summary>
-/// Obtiene clientes de forma paginada y filtrada
-/// </summary>
+// --- CLASES AUXILIARES ---
+public class PagoCxCItem
+{
+    public DateTime Fecha { get; set; }
+    public string Documento { get; set; }
+    public string Observacion { get; set; }
+    public string Moneda { get; set; }
+    public decimal Monto { get; set; }
+}

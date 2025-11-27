@@ -239,6 +239,44 @@
             </div>
         </div>
 
+        <!-- Modal Relación de Pagos (NUEVO) -->
+        <div id="modalRelacionPagos" class="modal-overlay" style="display:none; z-index: 1060;">
+            <div class="modal-content" style="max-width: 800px; width: 90%;">
+                <div class="modal-header">
+                    <h2 id="tituloModalPagos">Relación de Ingresos</h2>
+                    <button type="button" class="btn-close" onclick="cerrarModalRelacionPagos()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div id="loadingPagos" style="text-align:center; padding: 20px;">
+                        <div class="spinner"></div>
+                        <p>Cargando pagos...</p>
+                    </div>
+                    <div id="contenidoPagos" style="display:none; max-height: 500px; overflow-y: auto;">
+                        <table class="modal-pagos-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Documento</th>
+                                    <th>Observación</th>
+                                    <th>Moneda</th>
+                                    <th class="monto-col">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaPagosBody">
+                                <!-- Se llena con JS -->
+                            </tbody>
+                            <tfoot id="tablaPagosFooter">
+                                <!-- Total -->
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancelar" onclick="cerrarModalRelacionPagos()">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Spinner -->
         <div id="loadingSpinner" class="loading-spinner" style="display: none;">
             <div class="spinner"></div>
@@ -404,33 +442,46 @@
             });
         }
 
-        // Agrupar registros por cliente (nombre + dirección)
-        function agruparPorCliente() {
-            const grupos = {};
+        // Agrupar registros por cliente
+               function agruparPorCliente() {
+                   const grupos = {};
+                   const ordenados = [...todosLosRegistros].sort((a, b) => {
+                       // Buscamos la propiedad con mayúscula O minúscula para evitar errores
+                       const na = (a.nombreCliente || a.NombreCliente || '').localeCompare(b.nombreCliente || b.NombreCliente || '', 'es-DO');
+                       if (na !== 0) return na;
 
-            // Ordenar registros primero
-            const ordenados = [...todosLosRegistros].sort((a, b) => {
-                const na = (a.nombreCliente || '').localeCompare(b.nombreCliente || '', 'es-DO');
-                if (na !== 0) return na;
-                const fa = a.fechaFactura ? new Date(a.fechaFactura).getTime() : 0;
-                const fb = b.fechaFactura ? new Date(b.fechaFactura).getTime() : 0;
-                return fa - fb;
-            });
+                       // Sort by date safe check
+                       const dateA = a.fechaFactura ? new Date(a.fechaFactura) : (a.FechaFactura ? new Date(a.FechaFactura) : new Date(0));
+                       const dateB = b.fechaFactura ? new Date(b.fechaFactura) : (b.FechaFactura ? new Date(b.FechaFactura) : new Date(0));
+                       return dateA.getTime() - dateB.getTime();
+                   });
 
-            // Agrupar por nombre de cliente
-            for (const r of ordenados) {
-                const key = r.nombreCliente || '(Sin nombre)';
-                if (!grupos[key]) grupos[key] = [];
-                grupos[key].push(r);
-            }
+                   for (const r of ordenados) {
+                       const key = r.nombreCliente || r.NombreCliente || '(Sin nombre)';
+                       if (!grupos[key]) grupos[key] = [];
+                       grupos[key].push(r);
+                   }
 
-            // Convertir a array de grupos
-            gruposClientes = Object.keys(grupos).map(nombre => ({
-                nombre: nombre,
-                direccion: grupos[nombre].find(x => x.direccion)?.direccion || '',
-                items: grupos[nombre]
-            }));
-        }
+                   gruposClientes = Object.keys(grupos).map(nombre => {
+                       const items = grupos[nombre];
+                       const primerItem = items[0];
+
+                       // CORRECCIÓN PRINCIPAL: Detectar propiedad correcta (camelCase o PascalCase)
+                       // Esto es lo que estaba dando undefined
+                       const codigo = primerItem.codigoCliente || primerItem.CodigoCliente || '';
+
+                       // Buscar dirección robustamente
+                       const itemConDir = items.find(x => x.direccion || x.Direccion);
+                       const direccion = itemConDir ? (itemConDir.direccion || itemConDir.Direccion) : '';
+
+                       return {
+                           nombre: nombre,
+                           direccion: direccion,
+                           codigoCliente: codigo,
+                           items: items
+                       };
+                   });
+               }
 
         // Cambiar registros por página (ahora grupos)
         function cambiarRegistrosPorPagina() {
@@ -517,88 +568,93 @@
         }
 
         // Actualizar tabla con datos AGRUPADOS
-        function actualizarTabla(grupos) {
-            const tbody = document.querySelector('.results-table tbody');
+                    function actualizarTabla(grupos) {
+                const tbody = document.querySelector('.results-table tbody');
 
-            if (grupos && grupos.length > 0) {
-                let html = '';
-                let totalGeneralBalance = 0;
+                if (grupos && grupos.length > 0) {
+                    let html = '';
+                    let totalGeneralBalance = 0;
 
-                grupos.forEach(grupo => {
-                    const nombre = grupo.nombre;
-                    const direccion = grupo.direccion;
-                    const items = grupo.items;
+                    grupos.forEach(grupo => {
+                        const nombre = grupo.nombre;
+                        const direccion = grupo.direccion;
+                        const codigoCliente = grupo.codigoCliente; // Obtenemos el código
+                        const items = grupo.items;
 
-                    // Encabezado de grupo
-                    html += `
-                        <tr class="group-header">
-                            <td colspan="9" style="background:#f4f6f8;font-weight:700;">
-                                ${nombre} ${direccion ? ` - <small>${direccion}</small>` : ''}
-                            </td>
-                        </tr>
-                    `;
-
-                    // Filas del grupo
-                    let subtotal = 0;
-                    items.forEach(registro => {
-                        const fecha = registro.fechaFactura ? new Date(registro.fechaFactura) : null;
-                        const fechaFormateada = fecha ? fecha.toLocaleDateString('es-DO') : '';
-                        const balance = parseFloat(registro.totalR || 0);
-                        subtotal += isNaN(balance) ? 0 : balance;
-
+                        // Header con Botón de Pagos
                         html += `
-                            <tr>
-                                <td>
-                                    <button class="btn-ver-factura" onclick="abrirModalFacturaCxC('${registro.factura}', '${registro.codigoCliente || ''}')">👁️ Ver</button>
+                            <tr class="group-header">
+                                <td colspan="9" style="background:#f4f6f8; padding: 8px 15px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <div>
+                                            <strong>${nombre}</strong>
+                                            ${direccion ? `<span style="color:#666; font-weight:normal;"> - ${direccion}</span>` : ''}
+                                        </div>
+                                        <button type="button" class="btn-relacion-pago"
+                                                    onclick="abrirModalRelacionPagos('${codigoCliente}', '${nombre.replace(/'/g, "\\'")}')">
+                                            💰 Relación Pagos
+                                        </button>
+                                    </div>
                                 </td>
-                                <td style="font-weight:600;">${fechaFormateada}</td>
-                                <td style="font-weight:600;">${registro.factura || ''}</td>
-                                <td style="font-weight:600;">${fechaFormateada}</td>
-                                <td style="font-weight:600;">${registro.diasVencimiento ?? 0}</td>
-                                <td style="font-weight:600;">${registro.cuota || ''}</td>
-                                <td style="font-weight:600;">${registro.moneda || ''}</td>
-                                <td style="font-weight:600;">${registro.zona || ''}</td>
-                                <td style="text-align: right;font-weight:600;">${(balance).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                         `;
+
+                        let subtotal = 0;
+                        items.forEach(registro => {
+                            const fecha = registro.fechaFactura ? new Date(registro.fechaFactura) : null;
+                            const fechaFormateada = fecha ? fecha.toLocaleDateString('es-DO') : '';
+                            const balance = parseFloat(registro.totalR || 0);
+                            subtotal += isNaN(balance) ? 0 : balance;
+
+                            html += `
+                                <tr>
+                                    <td>
+                                        <button class="btn-ver-factura" onclick="abrirModalFacturaCxC('${registro.factura}', '${registro.codigoCliente || ''}')">👁️ Ver</button>
+                                    </td>
+                                    <td style="font-weight:600;">${fechaFormateada}</td>
+                                    <td style="font-weight:600;">${registro.factura || ''}</td>
+                                    <td style="font-weight:600;">${fechaFormateada}</td>
+                                    <td style="font-weight:600;">${registro.diasVencimiento ?? 0}</td>
+                                    <td style="font-weight:600;">${registro.cuota || ''}</td>
+                                    <td style="font-weight:600;">${registro.moneda || ''}</td>
+                                    <td style="font-weight:600;">${registro.zona || ''}</td>
+                                    <td style="text-align: right;font-weight:600;">${(balance).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                            `;
+                        });
+
+                        html += `
+                            <tr class="group-subtotal">
+                                <td colspan="8" style="text-align:right;font-weight:700;">Subtotal ${nombre}</td>
+                                <td style="text-align:right;font-weight:700;">
+                                    ${subtotal.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                </td>
+                            </tr>
+                        `;
+                        totalGeneralBalance += subtotal;
                     });
 
-                    // Subtotal del grupo
                     html += `
-                        <tr class="group-subtotal">
-                            <td colspan="8" style="text-align:right;font-weight:700;">Subtotal ${nombre}</td>
-                            <td style="text-align:right;font-weight:700;">
-                                ${subtotal.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        <tr class="group-total">
+                            <td colspan="8" style="text-align:right;font-weight:700;background:#e8e8e8;">Total Página</td>
+                            <td style="text-align:right;font-weight:700;background:#e8e8e8;">
+                                ${totalGeneralBalance.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                             </td>
                         </tr>
                     `;
-
-                    totalGeneralBalance += subtotal;
-                });
-
-                // Total general de la página
-                html += `
-                    <tr class="group-total">
-                        <td colspan="8" style="text-align:right;font-weight:700;background:#e8e8e8;">Total Página</td>
-                        <td style="text-align:right;font-weight:700;background:#e8e8e8;">
-                            ${totalGeneralBalance.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                        </td>
-                    </tr>
-                `;
-
-                tbody.innerHTML = html;
-            } else {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="9" class="empty-state">
-                            <div class="empty-state-icon">📊</div>
-                            <div class="empty-state-text">No se encontraron resultados</div>
-                            <small>Intenta ajustar los filtros de búsqueda</small>
-                        </td>
-                    </tr>
-                `;
+                    tbody.innerHTML = html;
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="empty-state">
+                                <div class="empty-state-icon">📊</div>
+                                <div class="empty-state-text">No se encontraron resultados</div>
+                                <small>Intenta ajustar los filtros de búsqueda</small>
+                            </td>
+                        </tr>
+                    `;
+                }
             }
-        }
 
         // Actualizar resumen (ahora en el header)
         function actualizarResumen(data) {
@@ -699,6 +755,87 @@
                 }
             });
         });
+
+                       // ===============================================
+            //  LÓGICA MODAL RELACIÓN DE PAGOS
+            // ===============================================
+            function abrirModalRelacionPagos(clienteCodigo, clienteNombre) {
+                if (!clienteCodigo || clienteCodigo === "undefined" || clienteCodigo === "") {
+                    alert("⚠️ Error: No se pudo identificar el código del cliente para este grupo.");
+                    console.error("Cliente Código es:", clienteCodigo);
+                    return;
+                }
+
+                document.getElementById('modalRelacionPagos').style.display = 'flex';
+                document.getElementById('tituloModalPagos').textContent = `Ingresos: ${clienteNombre}`;
+                document.getElementById('loadingPagos').style.display = 'block';
+                document.getElementById('contenidoPagos').style.display = 'none';
+                document.body.style.overflow = 'hidden'; // Bloquear scroll
+
+                // Nota: Debes crear este endpoint en tu controlador
+                fetch(`@Url.Action("ObtenerRelacionPagos", "CuentasPorCobrar")?cliente=${encodeURIComponent(clienteCodigo)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            renderizarTablaPagos(data.pagos);
+                        } else {
+                            document.getElementById('tablaPagosBody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">${data.message || 'Error al cargar pagos'}</td></tr>`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('tablaPagosBody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Error de conexión</td></tr>`;
+                    })
+                    .finally(() => {
+                        document.getElementById('loadingPagos').style.display = 'none';
+                        document.getElementById('contenidoPagos').style.display = 'block';
+                    });
+            }
+
+            function cerrarModalRelacionPagos() {
+                document.getElementById('modalRelacionPagos').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+
+            function renderizarTablaPagos(pagos) {
+                const tbody = document.getElementById('tablaPagosBody');
+                const tfoot = document.getElementById('tablaPagosFooter');
+
+                if (!pagos || pagos.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">No hay historial de ingresos para este cliente.</td></tr>`;
+                    tfoot.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+                let total = 0;
+
+                pagos.forEach(p => {
+                    const fecha = p.fecha ? new Date(p.fecha).toLocaleDateString('es-DO') : '';
+                    const monto = parseFloat(p.monto || 0);
+                    total += monto;
+
+                    html += `
+                        <tr>
+                            <td>${fecha}</td>
+                            <td>${p.documento || ''}</td>
+                            <td>${p.observacion || ''}</td>
+                            <td style="text-align:center;">${p.moneda || ''}</td>
+                            <td class="monto-col">${monto.toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+                tfoot.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align:right; font-weight:bold;">Total Pagado:</td>
+                        <td class="monto-col" style="font-weight:bold; color:#27ae60;">
+                            ${total.toLocaleString('es-DO', {minimumFractionDigits: 2})}
+                        </td>
+                    </tr>
+                `;
+            }
 
         // Modal: abrir usando endpoints de CxC
         function abrirModalFacturaCxC(contrato, cliente) {
