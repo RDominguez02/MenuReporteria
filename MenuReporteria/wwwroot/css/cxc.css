@@ -364,7 +364,18 @@ body {
 .btn-aceptar {
     background: linear-gradient(135deg, #0084ff 0%, #0066ff 100%);
     color: white;
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-weight: 600;
 }
+
+    .btn-aceptar:hover {
+        background-color: #e0e0e0;
+    }
 
 .btn-imprimir {
     background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
@@ -626,12 +637,13 @@ body {
 
 .btn-cancelar {
     padding: 8px 16px;
-    background-color: #f0f0f0;
+    background-color: #ffb300;
     border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s;
+    font-weight: 600px;
 }
 
     .btn-cancelar:hover {
@@ -753,6 +765,7 @@ body {
     gap: 5px;
     transition: background 0.3s;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-weight: 700;
 }
 
     .btn-relacion-pago:hover {
@@ -770,7 +783,7 @@ body {
     .modal-pagos-table th {
         background-color: #f8f9fa;
         color: #2c3e50;
-        font-weight: 600;
+        font-weight: 700;
         text-align: left;
         padding: 10px;
         border-bottom: 2px solid #e9ecef;
@@ -778,6 +791,7 @@ body {
 
     .modal-pagos-table td {
         padding: 10px;
+        font-weight: 600;
         border-bottom: 1px solid #eee;
     }
 
@@ -789,3 +803,123 @@ body {
     text-align: right !important;
     font-family: 'Roboto Mono', monospace;
 }
+
+/* --- Estilos para Modal Headers (Cliente y Vendedor) --- */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    /* CAMBIO: Fondo Azul y Letras Blancas */
+    background: linear-gradient(135deg, var(--primary), #0097a7); /* Usa tu variable primary */
+    color: white;
+    border-radius: 8px 8px 0 0; /* Redondear solo arriba para coincidir con el modal */
+}
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: white !important; /* Forzar blanco */
+        font-weight: 600;
+    }
+
+/* Ajustar el botón de cerrar (la X) para que se vea en fondo oscuro */
+.btn-close {
+    background: rgba(255, 255, 255, 0.2); /* Fondo semitransparente */
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: white !important; /* X blanca */
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%; /* Hacerlo circular */
+    transition: all 0.2s;
+}
+
+    .btn-close:hover {
+        background-color: rgba(255, 255, 255, 0.4);
+        color: white;
+    }
+
+/* Subrayado tenue para subtotales */
+.group-subtotal td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background-color: #fff;
+    /* El borde se maneja inline en el JS para asegurar prioridad, 
+       pero aquí definimos el padding para que se vea elegante */
+}
+
+/* Sección de Totales Finales por Moneda */
+.resumen-monedas-section {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-left: 5px solid var(--primary);
+}
+
+    .resumen-monedas-section h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+        color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+
+.totales-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.total-card {
+    flex: 1;
+    min-width: 200px;
+    padding: 15px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.total-label {
+    font-size: 0.9rem;
+    color: #333;
+    margin-bottom: 5px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.total-value {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #232323;
+}
+
+/* Estilos específicos para distinguir monedas visualmente */
+.total-rd {
+    background: linear-gradient(to bottom right, #e3f2fd, #bbdefb);
+    border-color: #90caf9;
+}
+
+    .total-rd .total-value {
+        color: #1565c0;
+    }
+
+.total-usd {
+    background: linear-gradient(to bottom right, #e8f5e9, #c8e6c9);
+    border-color: #a5d6a7;
+}
+
+    .total-usd .total-value {
+        color: #2e7d32;
+    }

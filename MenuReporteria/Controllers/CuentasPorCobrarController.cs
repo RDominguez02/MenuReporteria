@@ -23,7 +23,7 @@ namespace MenuReporteria.Controllers
             {
                 Filtros = new FiltroCxC
                 {
-                    FechaDesde = DateTime.Now.AddMonths(-1),
+                    FechaDesde = null,
                     FechaHasta = DateTime.Now,
                     ZonasDisponibles = _cuentasService.ObtenerZonas(),
                     ClientesDisponibles = _cuentasService.ObtenerClientes(),
@@ -263,5 +263,7 @@ namespace MenuReporteria.Controllers
                 return Json(new { success = false, message = $"Error al obtener el detalle: {ex.Message}" });
             }
         }
+
+
     }
 }

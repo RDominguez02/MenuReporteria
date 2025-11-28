@@ -7,6 +7,7 @@ using MenuReporteria.Models;
 using System.Text;
 using System.Linq;
 using System.Globalization;
+using OfficeOpenXml;
 
 namespace MenuReporteria.Services
 {
@@ -651,6 +652,7 @@ namespace MenuReporteria.Services
             return resultado;
         }
 
+
         public DetalleFacturaViewModel ObtenerDetalleFacturaCxC(string numeroContrato, string codigoCliente)
         {
             // Reutilizamos el detalle ya existente y lo mapeamos al layout del modal de ventas
@@ -764,6 +766,8 @@ namespace MenuReporteria.Services
         }
     }
 }
+
+
 
 // Agregar estos métodos a ReporteVentasService.cs
 

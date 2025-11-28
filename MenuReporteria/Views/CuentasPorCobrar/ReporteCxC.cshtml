@@ -59,11 +59,12 @@
     <div class="filters-title">Criterios de Búsqueda</div>
     <div class="filters-grid">
         <!-- Fecha Desde -->
-        <div class="filter-group">
-            <label for="fechaDesde">Desde la Fecha de Corte</label>
-            <input type="date" id="fechaDesde" name="fechaDesde" value="@Model?.Filtros?.FechaDesde?.ToString("yyyy-MM-dd")" required>
-            <small id="alertaFechas" class="alert-message" style="display:none;color:#d32f2f;">⚠️ La fecha desde no puede ser mayor que la fecha hasta</small>
-        </div>
+            <div class="filter-group">
+                <label for="fechaDesde">Desde la Fecha de Corte</label>
+                <input type="date" id="fechaDesde" name="fechaDesde"
+                        value="@(Model?.Filtros?.FechaDesde.HasValue == true ? Model.Filtros.FechaDesde.Value.ToString("yyyy-MM-dd") : "")">
+                <small id="alertaFechas" class="alert-message" style="display:none;color:#d32f2f;">⚠️ La fecha desde no puede ser mayor que la fecha hasta</small>
+            </div>
 
         <!-- Fecha Hasta -->
         <div class="filter-group">
@@ -93,7 +94,7 @@
             <label for="clienteInput">Para el Cliente</label>
             <div class="cliente-input-group">
                 <input type="text" id="clienteInput" name="cliente" placeholder="Nombre del cliente..." value="@Model?.Filtros?.Cliente">
-                <button type="button" class="btn-modal-cliente" onclick="abrirModalClientesCxC()">📋 Seleccionar</button>
+                <button type="button" class="btn-modal-cliente" onclick="abrirModalClientesCxC()">📋 Lista</button>
             </div>
         </div>
 
@@ -354,6 +355,8 @@
                 </tbody>
             </table>
         </div>
+        <div id="resumenMonedasContainer" class="resumen-monedas-section" style="display:none;">
+        </div>
 
         <!-- Paginación Inferior -->
         <div class="pagination-container">
@@ -443,45 +446,57 @@
         }
 
         // Agrupar registros por cliente
-               function agruparPorCliente() {
-                   const grupos = {};
-                   const ordenados = [...todosLosRegistros].sort((a, b) => {
-                       // Buscamos la propiedad con mayúscula O minúscula para evitar errores
-                       const na = (a.nombreCliente || a.NombreCliente || '').localeCompare(b.nombreCliente || b.NombreCliente || '', 'es-DO');
-                       if (na !== 0) return na;
+                       function agruparPorCliente() {
+            const grupos = {};
 
-                       // Sort by date safe check
-                       const dateA = a.fechaFactura ? new Date(a.fechaFactura) : (a.FechaFactura ? new Date(a.FechaFactura) : new Date(0));
-                       const dateB = b.fechaFactura ? new Date(b.fechaFactura) : (b.FechaFactura ? new Date(b.FechaFactura) : new Date(0));
-                       return dateA.getTime() - dateB.getTime();
-                   });
+            // Ordenamos por: 1. Nombre Cliente, 2. Moneda, 3. Fecha
+            const ordenados = [...todosLosRegistros].sort((a, b) => {
+                // Ordenar por Nombre
+                const na = (a.nombreCliente || a.NombreCliente || '').localeCompare(b.nombreCliente || b.NombreCliente || '', 'es-DO');
+                if (na !== 0) return na;
 
-                   for (const r of ordenados) {
-                       const key = r.nombreCliente || r.NombreCliente || '(Sin nombre)';
-                       if (!grupos[key]) grupos[key] = [];
-                       grupos[key].push(r);
-                   }
+                // Si es el mismo nombre, ordenar por Moneda
+                const ma = (a.moneda || a.Moneda || '').localeCompare(b.moneda || b.Moneda || '');
+                if (ma !== 0) return ma;
 
-                   gruposClientes = Object.keys(grupos).map(nombre => {
-                       const items = grupos[nombre];
-                       const primerItem = items[0];
+                // Si es la misma moneda, ordenar por fecha
+                const dateA = a.fechaFactura ? new Date(a.fechaFactura) : (a.FechaFactura ? new Date(a.FechaFactura) : new Date(0));
+                const dateB = b.fechaFactura ? new Date(b.fechaFactura) : (b.FechaFactura ? new Date(b.FechaFactura) : new Date(0));
+                return dateA.getTime() - dateB.getTime();
+            });
 
-                       // CORRECCIÓN PRINCIPAL: Detectar propiedad correcta (camelCase o PascalCase)
-                       // Esto es lo que estaba dando undefined
-                       const codigo = primerItem.codigoCliente || primerItem.CodigoCliente || '';
+            for (const r of ordenados) {
+                const nombre = r.nombreCliente || r.NombreCliente || '(Sin nombre)';
+                const moneda = r.moneda || r.Moneda || '???';
 
-                       // Buscar dirección robustamente
-                       const itemConDir = items.find(x => x.direccion || x.Direccion);
-                       const direccion = itemConDir ? (itemConDir.direccion || itemConDir.Direccion) : '';
+                // --- CAMBIO: La clave ahora incluye la moneda para separar grupos ---
+                const key = `${nombre}|${moneda}`;
 
-                       return {
-                           nombre: nombre,
-                           direccion: direccion,
-                           codigoCliente: codigo,
-                           items: items
-                       };
-                   });
-               }
+                if (!grupos[key]) grupos[key] = [];
+                grupos[key].push(r);
+            }
+
+            gruposClientes = Object.keys(grupos).map(key => {
+                const items = grupos[key];
+                const primerItem = items[0];
+
+                // Recuperamos datos del primer item
+                const nombre = primerItem.nombreCliente || primerItem.NombreCliente || '(Sin nombre)';
+                const moneda = primerItem.moneda || primerItem.Moneda || '';
+                const codigo = primerItem.codigoCliente || primerItem.CodigoCliente || '';
+
+                const itemConDir = items.find(x => x.direccion || x.Direccion);
+                const direccion = itemConDir ? (itemConDir.direccion || itemConDir.Direccion) : '';
+
+                return {
+                    nombre: nombre,
+                    moneda: moneda, // Guardamos la moneda a nivel de grupo
+                    direccion: direccion,
+                    codigoCliente: codigo,
+                    items: items
+                };
+            });
+        }
 
         // Cambiar registros por página (ahora grupos)
         function cambiarRegistrosPorPagina() {
@@ -568,94 +583,125 @@
         }
 
         // Actualizar tabla con datos AGRUPADOS
-                    function actualizarTabla(grupos) {
-                const tbody = document.querySelector('.results-table tbody');
+                   function actualizarTabla(grupos) {
+            const tbody = document.querySelector('.results-table tbody');
 
-                if (grupos && grupos.length > 0) {
-                    let html = '';
-                    let totalGeneralBalance = 0;
+            if (grupos && grupos.length > 0) {
+                let html = '';
 
-                    grupos.forEach(grupo => {
-                        const nombre = grupo.nombre;
-                        const direccion = grupo.direccion;
-                        const codigoCliente = grupo.codigoCliente; // Obtenemos el código
-                        const items = grupo.items;
+                grupos.forEach(grupo => {
+                    const nombre = grupo.nombre;
+                    const monedaGrupo = grupo.moneda;
+                    const direccion = grupo.direccion;
+                    const codigoCliente = grupo.codigoCliente;
+                    const items = grupo.items;
 
-                        // Header con Botón de Pagos
-                        html += `
-                            <tr class="group-header">
-                                <td colspan="9" style="background:#f4f6f8; padding: 8px 15px;">
-                                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div>
-                                            <strong>${nombre}</strong>
-                                            ${direccion ? `<span style="color:#666; font-weight:normal;"> - ${direccion}</span>` : ''}
-                                        </div>
-                                        <button type="button" class="btn-relacion-pago"
-                                                    onclick="abrirModalRelacionPagos('${codigoCliente}', '${nombre.replace(/'/g, "\\'")}')">
-                                            💰 Relación Pagos
-                                        </button>
+                    // 1. Header del Grupo
+                    html += `
+                        <tr class="group-header">
+                            <td colspan="9" style="background:#f4f6f8; padding: 8px 15px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <strong style="font-size:22px">${nombre}</strong>
+                                        <span class="badge-moneda" style="background:#00bcd4; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px;">${monedaGrupo}</span>
+                                        ${direccion ? `<span style="color:#666; font-weight:normal;"> - ${direccion}</span>` : ''}
                                     </div>
-                                </td>
-                            </tr>
-                        `;
+                                    <button type="button" class="btn-relacion-pago"
+                                            onclick="abrirModalRelacionPagos('${codigoCliente}', '${nombre.replace(/'/g, "\\'")}')">
+                                        💰 Relación Pagos
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
 
-                        let subtotal = 0;
-                        items.forEach(registro => {
-                            const fecha = registro.fechaFactura ? new Date(registro.fechaFactura) : null;
-                            const fechaFormateada = fecha ? fecha.toLocaleDateString('es-DO') : '';
-                            const balance = parseFloat(registro.totalR || 0);
-                            subtotal += isNaN(balance) ? 0 : balance;
-
-                            html += `
-                                <tr>
-                                    <td>
-                                        <button class="btn-ver-factura" onclick="abrirModalFacturaCxC('${registro.factura}', '${registro.codigoCliente || ''}')">👁️ Ver</button>
-                                    </td>
-                                    <td style="font-weight:600;">${fechaFormateada}</td>
-                                    <td style="font-weight:600;">${registro.factura || ''}</td>
-                                    <td style="font-weight:600;">${fechaFormateada}</td>
-                                    <td style="font-weight:600;">${registro.diasVencimiento ?? 0}</td>
-                                    <td style="font-weight:600;">${registro.cuota || ''}</td>
-                                    <td style="font-weight:600;">${registro.moneda || ''}</td>
-                                    <td style="font-weight:600;">${registro.zona || ''}</td>
-                                    <td style="text-align: right;font-weight:600;">${(balance).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                </tr>
-                            `;
-                        });
+                    // 2. Items
+                    let subtotal = 0;
+                    items.forEach(registro => {
+                        const fecha = registro.fechaFactura ? new Date(registro.fechaFactura) : null;
+                        const fechaFormateada = fecha ? fecha.toLocaleDateString('es-DO') : '';
+                        const balance = parseFloat(registro.totalR || 0);
+                        subtotal += isNaN(balance) ? 0 : balance;
 
                         html += `
-                            <tr class="group-subtotal">
-                                <td colspan="8" style="text-align:right;font-weight:700;">Subtotal ${nombre}</td>
-                                <td style="text-align:right;font-weight:700;">
-                                    ${subtotal.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            <tr>
+                                <td>
+                                    <button class="btn-ver-factura" onclick="abrirModalFacturaCxC('${registro.factura}', '${registro.codigoCliente || ''}')">👁️ Ver</button>
                                 </td>
+                                <td style="font-weight:600;">${fechaFormateada}</td>
+                                <td style="font-weight:600;">${registro.factura || ''}</td>
+                                <td style="font-weight:600;">${fechaFormateada}</td>
+                                <td style="font-weight:600;">${registro.diasVencimiento ?? 0}</td>
+                                <td style="font-weight:600;">${registro.cuota || ''}</td>
+                                <td style="font-weight:600;">${registro.moneda || ''}</td>
+                                <td style="font-weight:600;">${registro.zona || ''}</td>
+                                <td style="text-align: right;font-weight:600;">${(balance).toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                             </tr>
                         `;
-                        totalGeneralBalance += subtotal;
                     });
 
-                    html += `
-                        <tr class="group-total">
-                            <td colspan="8" style="text-align:right;font-weight:700;background:#e8e8e8;">Total Página</td>
-                            <td style="text-align:right;font-weight:700;background:#e8e8e8;">
-                                ${totalGeneralBalance.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    // 3. Subtotal con subrayado azul tenue (CAMBIO SOLICITADO)
+                     html += `
+                            <tr class="group-subtotal-resaltado" style="background-color: #1e3c72 ;">
+                            <td colspan="8" style="text-align:left; font-weight:700; color:#FFF; background-color: #1e3c72  !important;">
+                                Subtotal ${nombre}:
+                            </td>
+                                <td style="text-align:right; font-weight:700; color:#FFF; background-color: #1e3c72  !important;">
+                                ${monedaGrupo}$ ${subtotal.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                             </td>
                         </tr>
                     `;
-                    tbody.innerHTML = html;
-                } else {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="9" class="empty-state">
-                                <div class="empty-state-icon">📊</div>
-                                <div class="empty-state-text">No se encontraron resultados</div>
-                                <small>Intenta ajustar los filtros de búsqueda</small>
-                            </td>
-                        </tr>
-                    `;
-                }
-            }
+                });
 
+                // NOTA: Se eliminó el bloque "Total Página" como solicitaste.
+
+                tbody.innerHTML = html;
+
+                // Llamamos a calcular los totales globales cada vez que se actualiza la tabla
+                // (Aunque los globales no cambian al paginar, esto asegura que se muestren)
+                calcularTotalesGlobales();
+
+            } else {
+                tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No hay datos</td></tr>`;
+                document.getElementById('resumenMonedasContainer').style.display = 'none';
+            }
+        }
+
+        // [NUEVA FUNCIÓN] Calcular totales globales por moneda
+        function calcularTotalesGlobales() {
+            const totalesPorMoneda = {};
+
+            // Iteramos sobre TODOS los registros cargados (no solo la página actual)
+            todosLosRegistros.forEach(r => {
+                const moneda = r.moneda || r.Moneda || 'N/A';
+                const monto = parseFloat(r.totalR || 0);
+
+                if (!totalesPorMoneda[moneda]) {
+                    totalesPorMoneda[moneda] = 0;
+                }
+                totalesPorMoneda[moneda] += monto;
+            });
+
+            // Generar HTML del resumen
+            const container = document.getElementById('resumenMonedasContainer');
+            let htmlResumen = '<h3>Totales Generales por Moneda</h3><div class="totales-grid">';
+
+            for (const [moneda, total] of Object.entries(totalesPorMoneda)) {
+                // Asignamos una clase diferente si es USD o RD para estilo (opcional)
+                const claseMoneda = moneda.includes('US') ? 'total-usd' : 'total-rd';
+
+                htmlResumen += `
+                    <div class="total-card ${claseMoneda}">
+                        <div class="total-label">Total ${moneda}</div>
+                        <div class="total-value">${moneda} ${total.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                `;
+            }
+            htmlResumen += '</div>';
+
+            container.innerHTML = htmlResumen;
+            container.style.display = 'block';
+        }
         // Actualizar resumen (ahora en el header)
         function actualizarResumen(data) {
             // Mostrar total de grupos, no registros
