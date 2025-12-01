@@ -132,17 +132,17 @@ namespace MenuReporteria.Controllers
 
         [HttpPost]
         public IActionResult GenerarPDF(
-            DateTime? fechaDesde,
-            DateTime? fechaHasta,
-            string zona,
-            string cliente,
-            string vendedor,
-            string factura,
-            string facturaHasta,
-            int? cuotaDesde,
-            int? cuotaHasta,
-            string moneda,
-            string ordenMoneda)
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+    string zona,
+    string cliente,
+    string vendedor,
+    string factura,
+    string facturaHasta,
+    int? cuotaDesde,
+    int? cuotaHasta,
+    string moneda,
+    string ordenMoneda)
         {
             try
             {
@@ -163,14 +163,24 @@ namespace MenuReporteria.Controllers
 
                 var cuentas = _cuentasService.ObtenerCuentasPorFiltro(filtros);
 
-                // TODO: Implementar generación de PDF con iTextSharp
-                var pdfBytes = new byte[0];
+                var resultado = new ResultadoCxC
+                {
+                    Items = cuentas,
+                    Filtros = filtros,
+                    TotalRegistros = cuentas.Count,
+                    TotalFacturas = cuentas.Count,
+                    ValorTotal = cuentas.Sum(c => c.TotalR)
+                };
 
-                return File(pdfBytes, "application/pdf", $"ReporteCxC_{DateTime.Now:yyyyMMdd}.pdf");
+                // Generar PDF
+                byte[] pdfBytes = _cuentasService.GenerarReportePDF(resultado);
+
+                // Retornar como descarga
+                return File(pdfBytes, "application/pdf", $"ReporteCxC_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
             }
             catch (Exception ex)
             {
-                return BadRequest("Error al generar PDF: " + ex.Message);
+                return Json(new { success = false, message = $"Error al generar PDF: {ex.Message}" });
             }
         }
 
@@ -207,15 +217,25 @@ namespace MenuReporteria.Controllers
 
                 var cuentas = _cuentasService.ObtenerCuentasPorFiltro(filtros);
 
-                // TODO: Implementar generación de Excel con EPPlus
-                var excelBytes = new byte[0];
+                var resultado = new ResultadoCxC
+                {
+                    Items = cuentas,
+                    Filtros = filtros,
+                    TotalRegistros = cuentas.Count,
+                    TotalFacturas = cuentas.Count,
+                    ValorTotal = cuentas.Sum(c => c.TotalR)
+                };
 
+                // Generar Excel
+                byte[] excelBytes = _cuentasService.GenerarReporteExcel(resultado);
+
+                // Retornar como descarga
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    $"ReporteCxC_{DateTime.Now:yyyyMMdd}.xlsx");
+                    $"ReporteCxC_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
             }
             catch (Exception ex)
             {
-                return BadRequest("Error al exportar Excel: " + ex.Message);
+                return Json(new { success = false, message = $"Error al exportar Excel: {ex.Message}" });
             }
         }
 

@@ -8,6 +8,9 @@ using System.Text;
 using System.Linq;
 using System.Globalization;
 using OfficeOpenXml;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
+
 
 namespace MenuReporteria.Services
 {
@@ -650,6 +653,344 @@ namespace MenuReporteria.Services
             }
 
             return resultado;
+        }
+
+        public byte[] GenerarReportePDF(ResultadoCxC resultado)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                // Crear documento PDF en HORIZONTAL (Landscape)
+                Document doc = new Document(PageSize.A4.Rotate(), 10, 10, 20, 20);
+                PdfWriter writer = PdfWriter.GetInstance(doc, ms);
+                doc.Open();
+
+                // FUENTES
+                Font fontTitulo = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18);
+                Font fontSubtitulo = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10);
+                Font fontNormal = FontFactory.GetFont(FontFactory.HELVETICA, 8);
+                Font fontEncabezado = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9);
+
+                // TÍTULO
+                Paragraph titulo = new Paragraph("RELACIÓN CUENTAS X COBRAR - ESTADO X CLIENTE", fontTitulo);
+                titulo.Alignment = Element.ALIGN_CENTER;
+                doc.Add(titulo);
+
+                // INFORMACIÓN DEL REPORTE
+                Paragraph info = new Paragraph();
+                info.Add(new Chunk("Reporte de Cuentas por Cobrar\n", fontSubtitulo));
+                if (resultado.Filtros.FechaDesde.HasValue)
+                    info.Add(new Chunk($"Desde la Fecha: {resultado.Filtros.FechaDesde:dd-MM-yyyy}   ", fontNormal));
+                info.Add(new Chunk($"Hasta la fecha: {resultado.Filtros.FechaHasta:dd-MM-yyyy}", fontNormal));
+                if (!string.IsNullOrEmpty(resultado.Filtros.Zona))
+                    info.Add(new Chunk($"   / ZONA: {resultado.Filtros.Zona}", fontNormal));
+                if (!string.IsNullOrEmpty(resultado.Filtros.Moneda))
+                    info.Add(new Chunk($"   / MONEDA: {resultado.Filtros.Moneda}", fontNormal));
+                info.Alignment = Element.ALIGN_LEFT;
+                doc.Add(info);
+                doc.Add(new Paragraph(" "));
+
+                // TABLA
+                PdfPTable tabla = new PdfPTable(9);
+                tabla.WidthPercentage = 100;
+                tabla.SetWidths(new float[] { 20, 12, 10, 12, 10, 8, 8, 12, 12 });
+
+                // Encabezados
+                string[] encabezados = { "NOMBRE / DIRECCIÓN", "FECHA FACTURA", "FACTURA", "FECHA CUOTA", "DÍAS VENCIMIENTO", "NRO CUOTA", "MONEDA", "ZONA", "BALANCE" };
+
+                foreach (string encabezado in encabezados)
+                {
+                    PdfPCell celda = new PdfPCell(new Phrase(encabezado, fontEncabezado));
+                    celda.BackgroundColor = new BaseColor(30, 60, 114); // Azul oscuro
+                    celda.BorderWidth = 0.5f;
+                    celda.HorizontalAlignment = Element.ALIGN_CENTER;
+                    celda.VerticalAlignment = Element.ALIGN_MIDDLE;
+                    celda.Padding = 5;
+                    celda.PaddingTop = 6;
+                    celda.PaddingBottom = 6;
+
+                    Phrase frase = new Phrase(encabezado, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, Font.NORMAL, new BaseColor(255, 255, 255)));
+                    celda.Phrase = frase;
+
+                    tabla.AddCell(celda);
+                }
+
+                // FILAS
+                bool alternado = false;
+                decimal totalGeneral = 0;
+
+                foreach (var item in resultado.Items)
+                {
+                    BaseColor colorFondo = alternado ? new BaseColor(240, 245, 250) : new BaseColor(255, 255, 255);
+
+                    // NOMBRE / DIRECCIÓN
+                    PdfPCell celdaNombre = new PdfPCell(new Phrase($"{item.NombreCliente}\n{item.Direccion}", fontNormal));
+                    celdaNombre.BackgroundColor = colorFondo;
+                    celdaNombre.BorderWidth = 0.5f;
+                    celdaNombre.HorizontalAlignment = Element.ALIGN_LEFT;
+                    celdaNombre.Padding = 4;
+                    tabla.AddCell(celdaNombre);
+
+                    // FECHA FACTURA
+                    PdfPCell celdaFechaFactura = new PdfPCell(new Phrase(item.FechaFactura.ToString("dd-MM-yyyy"), fontNormal));
+                    celdaFechaFactura.BackgroundColor = colorFondo;
+                    celdaFechaFactura.BorderWidth = 0.5f;
+                    celdaFechaFactura.HorizontalAlignment = Element.ALIGN_CENTER;
+                    celdaFechaFactura.Padding = 4;
+                    tabla.AddCell(celdaFechaFactura);
+
+                    // FACTURA
+                    PdfPCell celdaFactura = new PdfPCell(new Phrase(item.Factura ?? "", fontNormal));
+                    celdaFactura.BackgroundColor = colorFondo;
+                    celdaFactura.BorderWidth = 0.5f;
+                    celdaFactura.HorizontalAlignment = Element.ALIGN_CENTER;
+                    celdaFactura.Padding = 4;
+                    tabla.AddCell(celdaFactura);
+
+                    // FECHA CUOTA
+                    PdfPCell celdaFechaCuota = new PdfPCell(new Phrase(item.FechaFactura.ToString("dd-MM-yyyy"), fontNormal));
+                    celdaFechaCuota.BackgroundColor = colorFondo;
+                    celdaFechaCuota.BorderWidth = 0.5f;
+                    celdaFechaCuota.HorizontalAlignment = Element.ALIGN_CENTER;
+                    celdaFechaCuota.Padding = 4;
+                    tabla.AddCell(celdaFechaCuota);
+
+                    // DÍAS VENCIMIENTO
+                    PdfPCell celdaDias = new PdfPCell(new Phrase(item.DiasVencimiento.ToString(), fontNormal));
+                    celdaDias.BackgroundColor = colorFondo;
+                    celdaDias.BorderWidth = 0.5f;
+                    celdaDias.HorizontalAlignment = Element.ALIGN_CENTER;
+                    celdaDias.Padding = 4;
+                    tabla.AddCell(celdaDias);
+
+                    // NRO CUOTA
+                    PdfPCell celdaCuota = new PdfPCell(new Phrase(item.Cuota ?? "", fontNormal));
+                    celdaCuota.BackgroundColor = colorFondo;
+                    celdaCuota.BorderWidth = 0.5f;
+                    celdaCuota.HorizontalAlignment = Element.ALIGN_CENTER;
+                    celdaCuota.Padding = 4;
+                    tabla.AddCell(celdaCuota);
+
+                    // MONEDA
+                    PdfPCell celdaMoneda = new PdfPCell(new Phrase(item.Moneda ?? "", fontNormal));
+                    celdaMoneda.BackgroundColor = colorFondo;
+                    celdaMoneda.BorderWidth = 0.5f;
+                    celdaMoneda.HorizontalAlignment = Element.ALIGN_CENTER;
+                    celdaMoneda.Padding = 4;
+                    tabla.AddCell(celdaMoneda);
+
+                    // ZONA
+                    PdfPCell celdaZona = new PdfPCell(new Phrase(item.Zona ?? "", fontNormal));
+                    celdaZona.BackgroundColor = colorFondo;
+                    celdaZona.BorderWidth = 0.5f;
+                    celdaZona.HorizontalAlignment = Element.ALIGN_CENTER;
+                    celdaZona.Padding = 4;
+                    tabla.AddCell(celdaZona);
+
+                    // BALANCE
+                    PdfPCell celdaBalance = new PdfPCell(new Phrase(item.TotalR.ToString("N2"), fontNormal));
+                    celdaBalance.BackgroundColor = colorFondo;
+                    celdaBalance.BorderWidth = 0.5f;
+                    celdaBalance.HorizontalAlignment = Element.ALIGN_RIGHT;
+                    celdaBalance.Padding = 4;
+                    tabla.AddCell(celdaBalance);
+
+                    totalGeneral += item.TotalR;
+                    alternado = !alternado;
+                }
+
+                doc.Add(tabla);
+                doc.Add(new Paragraph(" "));
+
+                // RESUMEN
+                PdfPTable resumenTabla = new PdfPTable(3);
+                resumenTabla.WidthPercentage = 100;
+
+                PdfPCell celdaResumen(string label, string valor)
+                {
+                    var celda = new PdfPCell(new Phrase($"{label}: {valor}", fontNormal));
+                    celda.Padding = 6;
+                    celda.BackgroundColor = new BaseColor(30, 60, 114);
+                    celda.BorderWidth = 0.5f;
+                    celda.HorizontalAlignment = Element.ALIGN_CENTER;
+
+                    Phrase fraseResumen = new Phrase($"{label}: {valor}", FontFactory.GetFont(FontFactory.HELVETICA, 9, Font.NORMAL, new BaseColor(255, 255, 255)));
+                    celda.Phrase = fraseResumen;
+
+                    return celda;
+                }
+
+                resumenTabla.AddCell(celdaResumen("Total Registros", resultado.Items.Count.ToString()));
+                resumenTabla.AddCell(celdaResumen("Total Facturas", resultado.TotalFacturas.ToString()));
+                resumenTabla.AddCell(celdaResumen("Valor Total", $"RD$ {totalGeneral:N2}"));
+
+                doc.Add(resumenTabla);
+
+                doc.Close();
+                writer.Close();
+
+                return ms.ToArray();
+            }
+        }
+
+        public byte[] GenerarReporteExcel(ResultadoCxC resultado)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Reporte CxC");
+
+                // ESTILOS
+                var fillColor = System.Drawing.Color.FromArgb(30, 60, 114);
+                var fontColorWhite = System.Drawing.Color.White;
+
+                // TÍTULO
+                worksheet.Cells["A1"].Value = "RELACIÓN CUENTAS X COBRAR - ESTADO X CLIENTE";
+                worksheet.Cells["A1"].Style.Font.Bold = true;
+                worksheet.Cells["A1"].Style.Font.Size = 16;
+                worksheet.Cells["A1:I1"].Merge = true;
+                worksheet.Cells["A1"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+
+                // INFORMACIÓN DEL REPORTE
+                worksheet.Cells["A3"].Value = "Reporte de Cuentas por Cobrar";
+                worksheet.Cells["A3"].Style.Font.Bold = true;
+                worksheet.Cells["A3"].Style.Font.Size = 11;
+
+                string infoFecha = "Desde: ";
+                if (resultado.Filtros.FechaDesde.HasValue)
+                    infoFecha += resultado.Filtros.FechaDesde.Value.ToString("dd-MM-yyyy");
+                infoFecha += " | Hasta: " + resultado.Filtros.FechaHasta.Value.ToString("dd-MM-yyyy");
+
+                worksheet.Cells["A4"].Value = infoFecha;
+
+                if (!string.IsNullOrEmpty(resultado.Filtros.Zona))
+                    worksheet.Cells["B4"].Value = $"Zona: {resultado.Filtros.Zona}";
+                if (!string.IsNullOrEmpty(resultado.Filtros.Moneda))
+                    worksheet.Cells["C4"].Value = $"Moneda: {resultado.Filtros.Moneda}";
+
+                // ENCABEZADOS DE TABLA
+                int fila = 6;
+                string[] encabezados = { "NOMBRE / DIRECCIÓN", "FECHA FACTURA", "FACTURA", "FECHA CUOTA", "DÍAS VENCIMIENTO", "NRO CUOTA", "MONEDA", "ZONA", "BALANCE" };
+
+                for (int i = 0; i < encabezados.Length; i++)
+                {
+                    var cell = worksheet.Cells[fila, i + 1];
+                    cell.Value = encabezados[i];
+                    cell.Style.Font.Bold = true;
+                    cell.Style.Font.Size = 11;
+                    cell.Style.Font.Color.SetColor(fontColorWhite);
+                    cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    cell.Style.Fill.BackgroundColor.SetColor(fillColor);
+                    cell.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                    cell.Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                    cell.Style.Border.Bottom.Style = OfficeOpenXml.Style.ExcelBorderStyle.Medium;
+                }
+
+                // DATOS
+                fila = 7;
+                int colorAlternado = 0;
+                decimal totalGeneral = 0;
+
+                foreach (var item in resultado.Items)
+                {
+                    System.Drawing.Color colorFila = colorAlternado % 2 == 0
+                        ? System.Drawing.Color.White
+                        : System.Drawing.Color.FromArgb(240, 245, 250);
+
+                    worksheet.Cells[fila, 1].Value = $"{item.NombreCliente}\n{item.Direccion}";
+                    worksheet.Cells[fila, 2].Value = item.FechaFactura.ToString("dd-MM-yyyy");
+                    worksheet.Cells[fila, 3].Value = item.Factura ?? "";
+                    worksheet.Cells[fila, 4].Value = item.FechaFactura.ToString("dd-MM-yyyy");
+                    worksheet.Cells[fila, 5].Value = item.DiasVencimiento;
+                    worksheet.Cells[fila, 6].Value = item.Cuota ?? "";
+                    worksheet.Cells[fila, 7].Value = item.Moneda ?? "";
+                    worksheet.Cells[fila, 8].Value = item.Zona ?? "";
+                    worksheet.Cells[fila, 9].Value = item.TotalR;
+
+                    // Aplicar formato y color
+                    for (int i = 1; i <= 9; i++)
+                    {
+                        var cell = worksheet.Cells[fila, i];
+                        cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                        cell.Style.Fill.BackgroundColor.SetColor(colorFila);
+                        cell.Style.Font.Color.SetColor(System.Drawing.Color.Black);
+
+                        // Alinear números a la derecha
+                        if (i == 9 || i == 5)
+                        {
+                            cell.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                            cell.Style.Numberformat.Format = "#,##0.00";
+                        }
+                        else if (i >= 2 && i <= 8)
+                        {
+                            cell.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                        }
+                    }
+
+                    totalGeneral += item.TotalR;
+                    fila++;
+                    colorAlternado++;
+                }
+
+                // RESUMEN
+                int filaResumen = fila + 2;
+                worksheet.Cells[filaResumen, 1].Value = "RESUMEN";
+                worksheet.Cells[filaResumen, 1].Style.Font.Bold = true;
+                worksheet.Cells[filaResumen, 1].Style.Font.Size = 11;
+
+                filaResumen++;
+
+                // Total Registros
+                worksheet.Cells[filaResumen, 1].Value = "Total Registros:";
+                worksheet.Cells[filaResumen, 2].Value = resultado.Items.Count;
+                worksheet.Cells[filaResumen, 1].Style.Font.Bold = true;
+                worksheet.Cells[filaResumen, 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                worksheet.Cells[filaResumen, 1].Style.Fill.BackgroundColor.SetColor(fillColor);
+                worksheet.Cells[filaResumen, 1].Style.Font.Color.SetColor(fontColorWhite);
+                worksheet.Cells[filaResumen, 2].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                worksheet.Cells[filaResumen, 2].Style.Fill.BackgroundColor.SetColor(fillColor);
+                worksheet.Cells[filaResumen, 2].Style.Font.Color.SetColor(fontColorWhite);
+
+                filaResumen++;
+
+                // Total Facturas
+                worksheet.Cells[filaResumen, 1].Value = "Total Facturas:";
+                worksheet.Cells[filaResumen, 2].Value = resultado.TotalFacturas;
+                worksheet.Cells[filaResumen, 1].Style.Font.Bold = true;
+                worksheet.Cells[filaResumen, 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                worksheet.Cells[filaResumen, 1].Style.Fill.BackgroundColor.SetColor(fillColor);
+                worksheet.Cells[filaResumen, 1].Style.Font.Color.SetColor(fontColorWhite);
+                worksheet.Cells[filaResumen, 2].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                worksheet.Cells[filaResumen, 2].Style.Fill.BackgroundColor.SetColor(fillColor);
+                worksheet.Cells[filaResumen, 2].Style.Font.Color.SetColor(fontColorWhite);
+
+                filaResumen++;
+
+                // Valor Total
+                worksheet.Cells[filaResumen, 1].Value = "Valor Total:";
+                worksheet.Cells[filaResumen, 2].Value = totalGeneral;
+                worksheet.Cells[filaResumen, 1].Style.Font.Bold = true;
+                worksheet.Cells[filaResumen, 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                worksheet.Cells[filaResumen, 1].Style.Fill.BackgroundColor.SetColor(fillColor);
+                worksheet.Cells[filaResumen, 1].Style.Font.Color.SetColor(fontColorWhite);
+                worksheet.Cells[filaResumen, 2].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                worksheet.Cells[filaResumen, 2].Style.Fill.BackgroundColor.SetColor(fillColor);
+                worksheet.Cells[filaResumen, 2].Style.Font.Color.SetColor(fontColorWhite);
+                worksheet.Cells[filaResumen, 2].Style.Numberformat.Format = "#,##0.00";
+
+                // AJUSTAR ANCHO DE COLUMNAS
+                worksheet.Column(1).Width = 30;
+                worksheet.Column(2).Width = 15;
+                worksheet.Column(3).Width = 12;
+                worksheet.Column(4).Width = 15;
+                worksheet.Column(5).Width = 15;
+                worksheet.Column(6).Width = 10;
+                worksheet.Column(7).Width = 10;
+                worksheet.Column(8).Width = 10;
+                worksheet.Column(9).Width = 15;
+
+                return package.GetAsByteArray();
+            }
         }
 
 

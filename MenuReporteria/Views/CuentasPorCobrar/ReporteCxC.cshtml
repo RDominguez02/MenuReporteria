@@ -710,7 +710,6 @@
             document.getElementById('totalMonto').textContent = 'RD$ ' + totalMonto.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
 
-        // Imprimir reporte
         function imprimirReporte() {
             if (gruposClientes.length === 0) {
                 alert('⚠️ No hay datos cargados para imprimir. Por favor, carga el reporte primero.');
@@ -751,7 +750,6 @@
             });
         }
 
-        // Exportar reporte
         function exportarReporte() {
             if (gruposClientes.length === 0) {
                 alert('⚠️ No hay datos cargados para exportar. Por favor, carga el reporte primero.');
