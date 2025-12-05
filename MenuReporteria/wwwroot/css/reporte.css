@@ -76,7 +76,7 @@
 .header-summary-value {
     font-size: 1.3rem;
     font-weight: bold;
-    color: var(--primary);
+    color: rgba(0, 0, 0);
 }
 
 /* Botones en el Header */
@@ -348,6 +348,8 @@
     align-items: center;
     gap: 8px;
     text-decoration: none;
+    width: 165px; /* Para evitar que se hagan muy pequeños */
+    justify-content: center;
 }
 
     .btn-action:hover {
@@ -547,7 +549,7 @@
     .modal-header h2 {
         margin: 0;
         font-size: 18px;
-        color: #333;
+        color: #fff;
     }
 
 .btn-close {

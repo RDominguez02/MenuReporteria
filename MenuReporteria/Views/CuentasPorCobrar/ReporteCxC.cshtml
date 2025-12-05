@@ -94,7 +94,7 @@
             <label for="clienteInput">Para el Cliente</label>
             <div class="cliente-input-group">
                 <input type="text" id="clienteInput" name="cliente" placeholder="Nombre del cliente..." value="@Model?.Filtros?.Cliente">
-                <button type="button" class="btn-modal-cliente" onclick="abrirModalClientesCxC()">📋 Lista</button>
+                        <button type="button" class="btn-modal-cliente" onclick="abrirModalClientesCxC()">🔍</button>
             </div>
         </div>
 
@@ -108,7 +108,7 @@
 
                         <input type="hidden" id="vendedor" name="vendedor" value="@Model?.Filtros?.Vendedor">
 
-                        <button type="button" class="btn-modal-cliente" onclick="abrirModalVendedores()">📋 Lista</button>
+                        <button type="button" class="btn-modal-cliente" onclick="abrirModalVendedores()">🔍</button>
                     </div>
                 </div>
 
@@ -603,7 +603,7 @@
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
                                     <div>
                                         <strong style="font-size:22px">${nombre}</strong>
-                                        <span class="badge-moneda" style="background:#00bcd4; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px;">${monedaGrupo}</span>
+                                        <span class="badge-moneda" style="background:#00bcd4; color:white; padding:2px 6px; border-radius:4px; font-size:1.3em; margin-left:5px;">${monedaGrupo}</span>
                                         ${direccion ? `<span style="color:#666; font-weight:normal;"> - ${direccion}</span>` : ''}
                                     </div>
                                     <button type="button" class="btn-relacion-pago"

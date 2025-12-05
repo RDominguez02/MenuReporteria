@@ -88,7 +88,7 @@ body {
 .header-summary-value {
     font-size: 1.3rem;
     font-weight: bold;
-    color: var(--primary);
+    color: rgba(0, 0, 0);
 }
 
 /* Botones en el Header */
@@ -96,6 +96,9 @@ body {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
+    min-width: 120px; /* Para evitar que se hagan muy pequeños */
+    justify-content: center;
+
 }
 
 .btn-toggle-filters {
@@ -111,6 +114,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    
 }
 
     .btn-toggle-filters:hover {
@@ -354,6 +358,8 @@ body {
     align-items: center;
     gap: 8px;
     text-decoration: none;
+    width: 165px; /* Para evitar que se hagan muy pequeños */
+    justify-content: center;
 }
 
     .btn-action:hover {

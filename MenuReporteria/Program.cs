@@ -11,6 +11,10 @@ builder.Services.AddTransient<ReporteVentasService>();
 
 var app = builder.Build();
 
+//// Configurar para escuchar en todas las interfaces
+//app.Urls.Add("http://0.0.0.0:5000");
+//app.Urls.Add("https://0.0.0.0:5001");
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
