@@ -41,6 +41,25 @@ namespace MenuReporteria.Controllers
             return View("ReporteVentas", modelo);
         }
 
+        public IActionResult Index2()
+        {
+            var modelo = new ResultadoReporteVentas
+            {
+                Filtros = new FiltroVentas
+                {
+                    FechaDesde = DateTime.Now.AddMonths(-1),
+                    FechaHasta = DateTime.Now,
+                    // CARGAR LISTAS PARA DROPDOWNS
+                    VendedoresDisponibles = _reporteService.ObtenerVendedores(),
+                    CajasDisponibles = _reporteService.ObtenerCajas(),
+                    MonedasDisponibles = _reporteService.ObtenerMonedas(),
+                    SucursalesDisponibles = _reporteService.ObtenerSucursales()
+                }
+            };
+
+            return View("ReporteVentas2", modelo);
+        }
+
         [HttpPost]
         public IActionResult Generar(FiltroVentas filtros)
         {

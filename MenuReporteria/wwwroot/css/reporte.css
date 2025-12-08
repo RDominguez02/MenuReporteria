@@ -270,34 +270,68 @@
     color: #666;
 }
 
-/* Tipos de Reporte */
-.report-type-group {
+/* ==========================================================================
+   ACTUALIZACIÓN: Alineación horizontal de filtros de reporte
+   ========================================================================== */
+
+/* 1. Definir el separador para que corte el grid de inputs superiores */
+.filter-separator {
     grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    margin: 1.5rem 0 0.5rem 0;
+    width: 100%;
+}
+
+/* 2. Modificar el grupo para que ocupe solo 1 columna del grid (no toda la fila) */
+.report-type-group {
+    /* grid-column: 1 / -1;  <--- ELIMINAR O COMENTAR ESTA LÍNEA */
+    grid-column: span 1; /* Ahora ocupará el espacio natural del grid */
+
     padding: 1rem;
     background: white;
     border-radius: 6px;
     border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
 }
+
+    /* 3. Forzar que el grupo "Opciones" (el último) sí ocupe toda la fila
+      porque tiene demasiados elementos para una columna pequeña */
+    .report-type-group:last-of-type {
+        grid-column: 1 / -1;
+    }
 
     .report-type-group h4 {
-        margin: 0 0 1rem 0;
+        margin: 0 0 0.8rem 0;
         color: var(--dark);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 5px;
     }
 
-.report-type-options {
+/* 4. Estilizar el contenedor interno compacto para que los radio buttons fluyan bien */
+.report-type-options-compact {
     display: flex;
-    gap: 2rem;
-    flex-wrap: wrap;
+    flex-direction: column; /* Lista vertical para ahorrar ancho o 'row' con wrap */
+    gap: 0.5rem;
 }
 
-    .report-type-options label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
+/* Si prefieres que dentro del cuadro pequeño se pongan lado a lado si caben: */
+@media (min-width: 1400px) {
+    .report-type-options-compact {
+        flex-direction: row;
+        flex-wrap: wrap;
     }
+}
 
+.report-type-options-compact label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
 /* Tabla de Resultados */
 .table-container {
     overflow-x: auto;

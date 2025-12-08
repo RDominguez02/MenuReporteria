@@ -23,7 +23,7 @@ namespace MenuReporteria.Services
             var vendedores = new List<string>();
             using (var connection = new SqlConnection(_connectionString))
             {
-                var query = "SELECT DISTINCT ve_codigo FROM IVBDHEPE ORDER BY VE_CODIGO";
+                var query = "SELECT VE_CODIGO, ISNULL(VE_NOMBRE, '') AS VE_NOMBRE FROM prbdvend";
                 using (var command = new SqlCommand(query, connection))
                 {
                     connection.Open();
@@ -114,24 +114,40 @@ namespace MenuReporteria.Services
             using (var connection = new SqlConnection(_connectionString))
             {
                 var query = @"
-                SELECT
-                    he_fecha, he_tipo, 'F' AS tipo, he_factura, cl_codigo, he_nombre, he_monto, 
-                    he_horamod, he_turno, he_paypal, he_valdesc, he_itbis, he_neto, he_flete, 
-                    he_desc, he_tipdes, he_ncf, he_rotura, he_ogas, he_usuario, he_Caja,
-                    he_rnc, su_codigo, ve_codigo, HE_CREGEN, HE_VCREDI, HE_APARTA, HE_CONGEN, 
-                    HE_ECHEQUE, HE_ETARJE, HE_BONIFI, HE_VCONSUMO, HE_PUNTOS, he_itbis18, 
-                    he_itbis08, IM_CODIGO, he_conduce, HE_ORDEN, mo_codigo, he_tasa, 
-                    he_personas, (HE_TASA * he_neto) as totalR
-                FROM IVBDHEPE
-                WHERE CAST(he_fecha AS DATE) BETWEEN @FechaDesde AND @FechaHasta
-            ";
+            SELECT
+                he_fecha, he_tipo, 'F' AS tipo, he_factura, cl_codigo, he_nombre, he_monto, 
+                he_horamod, he_turno, he_paypal, he_valdesc, he_itbis, he_neto, he_flete, 
+                he_desc, he_tipdes, he_ncf, he_rotura, he_ogas, he_usuario, he_Caja,
+                he_rnc, su_codigo, ve_codigo, HE_CREGEN, HE_VCREDI, HE_APARTA, HE_CONGEN, 
+                HE_ECHEQUE, HE_ETARJE, HE_BONIFI, HE_VCONSUMO, HE_PUNTOS, he_itbis18, 
+                he_itbis08, IM_CODIGO, he_conduce, HE_ORDEN, mo_codigo, he_tasa, 
+                he_personas, (HE_TASA * he_neto) as totalR
+            FROM IVBDHEPE
+            WHERE CAST(he_fecha AS DATE) BETWEEN @FechaDesde AND @FechaHasta
+        ";
 
                 // FILTROS BÁSICOS
                 if (!string.IsNullOrEmpty(filtros.Cliente))
                     query += " AND he_nombre LIKE '%' + @Cliente + '%'";
 
+                // MANEJO DE MÚLTIPLES VENDEDORES
                 if (!string.IsNullOrEmpty(filtros.Vendedor))
-                    query += " AND ve_codigo = @Vendedor";
+                {
+                    var listaVendedores = filtros.Vendedor.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                                          .Select(v => v.Trim())
+                                                          .ToList();
+
+                    if (listaVendedores.Count > 0)
+                    {
+                        var parametrosIn = new List<string>();
+                        for (int i = 0; i < listaVendedores.Count; i++)
+                        {
+                            parametrosIn.Add($"@Vendedor{i}");
+                        }
+
+                        query += $" AND ve_codigo IN ({string.Join(",", parametrosIn)})";
+                    }
+                }
 
                 if (filtros.ValorDesde.HasValue)
                     query += " AND he_monto >= @ValorDesde";
@@ -157,41 +173,40 @@ namespace MenuReporteria.Services
 
                 // FILTRO TIPO DE FACTURA (Contado/Crédito)
                 if (filtros.TipoFactura == "Contado")
-                    query += " AND he_tipo = 1"; // Ajusta según tu lógica
+                    query += " AND he_tipo = 1";
                 else if (filtros.TipoFactura == "Crédito")
-                    query += " AND he_tipo = 2"; // Ajusta según tu lógica
+                    query += " AND he_tipo = 2";
 
                 // FILTRO MODO DE FACTURAS
                 if (filtros.ModoFacturas == "Mayor")
-                    query += " AND he_tipof = '2'"; // Ajusta según tu campo
+                    query += " AND he_tipof = '2'";
                 else if (filtros.ModoFacturas == "Detalle")
-                    query += " AND he_tipof = '1'"; // Ajusta según tu campo
+                    query += " AND he_tipof = '1'";
 
                 // FILTRO OPCIONES
                 switch (filtros.Opciones)
                 {
                     case "Normales":
-                        query += " AND he_progra=0"; // Ajusta según tu lógica
+                        query += " AND he_progra=0";
                         break;
                     case "SoloNCF":
                         query += " AND he_progra=1 and he_rotura=0";
                         break;
                     case "Editadas":
-                        query += " AND he_progra=5 and he_rotura=0 "; // Ajusta según tu campo de edición
+                        query += " AND he_progra=5 and he_rotura=0";
                         break;
                     case "Repuestos":
-                        query += " he_progra=2 and he_rotura=0"; // Ajusta según tu lógica
+                        query += " AND he_progra=2 and he_rotura=0";
                         break;
                     case "Placa":
-                        query += " AND he_progra=1 and he_rotura=1"; // Ajusta según tu lógica
+                        query += " AND he_progra=1 and he_rotura=1";
                         break;
-                        // "Todas" no agrega filtro
                 }
 
                 // ORDENAMIENTO
                 if (filtros.OrdenadoPor == "FACTURA")
                     query += " ORDER BY he_factura";
-                else // FECHA_FACTURA por defecto
+                else
                     query += " ORDER BY he_fecha, he_factura";
 
                 using (var command = new SqlCommand(query, connection))
@@ -202,8 +217,19 @@ namespace MenuReporteria.Services
 
                     if (!string.IsNullOrEmpty(filtros.Cliente))
                         command.Parameters.AddWithValue("@Cliente", filtros.Cliente);
+
+                    // PARÁMETROS DE MÚLTIPLES VENDEDORES
                     if (!string.IsNullOrEmpty(filtros.Vendedor))
-                        command.Parameters.AddWithValue("@Vendedor", filtros.Vendedor);
+                    {
+                        var listaVendedores = filtros.Vendedor.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                                              .Select(v => v.Trim())
+                                                              .ToList();
+                        for (int i = 0; i < listaVendedores.Count; i++)
+                        {
+                            command.Parameters.AddWithValue($"@Vendedor{i}", listaVendedores[i]);
+                        }
+                    }
+
                     if (filtros.ValorDesde.HasValue)
                         command.Parameters.AddWithValue("@ValorDesde", filtros.ValorDesde.Value);
                     if (filtros.ValorHasta.HasValue)
@@ -215,7 +241,6 @@ namespace MenuReporteria.Services
                     if (!string.IsNullOrEmpty(filtros.Caja))
                         command.Parameters.AddWithValue("@Caja", filtros.Caja);
 
-                    // NUEVOS PARÁMETROS
                     if (!string.IsNullOrEmpty(filtros.Moneda))
                         command.Parameters.AddWithValue("@Moneda", filtros.Moneda);
                     if (!string.IsNullOrEmpty(filtros.Sucursal))

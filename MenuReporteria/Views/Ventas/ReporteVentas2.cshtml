@@ -80,16 +80,19 @@
 
             <!-- Vendedor -->
             <div class="filter-group">
-                <label for="vendedorDisplay">Vendedor</label>
-                <div class="cliente-input-group">
-                    <input type="text" id="vendedorDisplay" readonly
-                           placeholder="-- Todos --"
-                           value="@(string.IsNullOrEmpty(Model?.Filtros?.Vendedor) ? "" : "Vendedores Seleccionados")">
-
-                    <input type="hidden" id="vendedor" name="vendedor" value="@Model?.Filtros?.Vendedor">
-
-                    <button type="button" class="btn-modal-cliente" onclick="abrirModalVendedores()">🔍</button>
-                </div>
+                <label>Vendedor</label>
+                <select name="vendedor">
+                    <option value="">-- Seleccionar --</option>
+                    @if (Model?.Filtros?.VendedoresDisponibles != null)
+                    {
+                        @foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
+                        {
+                            <option value="@vendedor" selected="@(Model.Filtros.Vendedor == vendedor ? "selected" : null)">
+                                @vendedor
+                            </option>
+                        }
+                    }
+                </select>
             </div>
 
             <!-- Valor Desde -->
@@ -239,43 +242,6 @@
         </div>
     </div>
 
-    <!-- Modal Vendedores -->
-    <div id="modalVendedores" class="modal-overlay" style="display:none;">
-        <div class="modal-content modal-clientes" style="max-width: 500px;">
-            <div class="modal-header">
-                <h2>Seleccionar Vendedores</h2>
-                <button type="button" class="btn-close" onclick="cerrarModalVendedores()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="acciones-modal" style="margin-bottom: 10px; display: flex; gap: 10px;">
-                    <button type="button" onclick="marcarTodosVendedores(true)" class="btn-action btn-imprimir" style="padding: 5px 10px; font-size: 12px;">Marcar Todos</button>
-                    <button type="button" onclick="marcarTodosVendedores(false)" class="btn-action btn-retornar" style="padding: 5px 10px; font-size: 12px;">Desmarcar Todos</button>
-                </div>
-
-                <div id="listaVendedoresCheck" class="lista-clientes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
-                    @if (Model?.Filtros?.VendedoresDisponibles != null)
-                    {
-                        var seleccionados = (Model.Filtros.Vendedor ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
-                        {
-                            var isChecked = seleccionados.Contains(vendedor) ? "checked" : "";
-                            <div class="vendedor-check-item" style="padding: 5px; border-bottom: 1px solid #eee;">
-                                <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
-                                    <input type="checkbox" class="chk-vendedor" value="@vendedor" @isChecked style="margin-right: 10px; width: auto;">
-                                    <span><strong>@vendedor</strong></span>
-                                </label>
-                            </div>
-                        }
-                    }
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancelar" onclick="cerrarModalVendedores()">Cancelar</button>
-                <button type="button" class="btn-aceptar" onclick="aplicarFiltroVendedores()">Aplicar Selección</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="loading-spinner">
         <div class="spinner"></div>
@@ -313,15 +279,9 @@
                     <th>Codigo</th>
                     <th>Cliente</th>
                     <th>Vendedor</th>
-                    <th>Caja</th>
-                    <th>Turno</th>
-                    <th>Monto Bruto</th>
-                    <th>ITBis</th>
-                    <th>CIF</th>
                     <th>Monto Neto</th>
                     <th>Moneda</th>
                     <th>Tasa</th>
-                    <th>Total Real</th>
                     <th>Total Chasis</th>
                 </tr>
             </thead>
@@ -342,15 +302,9 @@
                             <td>@venta.CodigoCliente</td>
                             <td>@venta.Cliente</td>
                             <td>@venta.Vendedor</td>
-                            <td>@venta.Caja</td>
-                            <td>@venta.Turno</td>
-                            <td style="text-align: right;">@venta.MontoBruto.ToString("N2")</td>
-                            <td style="text-align: right;">@venta.Itbis.ToString("N2")</td>
-                            <td style="text-align: right;">@venta.CIF.ToString("N2")</td>
                             <td style="text-align: right;">@venta.MontoNeto.ToString("N2")</td>
                             <td>@venta.Moneda</td>
                             <td style="text-align: right;">@venta.Tasa.ToString("N2")</td>
-                            <td style="text-align: right;">@venta.TotalR.ToString("N2")</td>
                             <td style="text-align: right;">@venta.TotalChasis.ToString("N2")</td>
                         </tr>
                     }
@@ -737,15 +691,9 @@
                     <td>${venta.codigoCliente || ''}</td>
                     <td>${venta.cliente}</td>
                     <td>${venta.vendedor || ''}</td>
-                    <td>${venta.caja}</td>
-                    <td>${venta.turno}</td>
-                    <td style="text-align: right;">${parseFloat(venta.montoBruto).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
-                    <td style="text-align: right;">${parseFloat(venta.itbis).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
-                    <td style="text-align: right;">${parseFloat(venta.cif).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
                     <td style="text-align: right;">${parseFloat(venta.montoNeto).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
                     <td>${venta.moneda}</td>
                     <td style="text-align: right;">${parseFloat(venta.tasa).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
-                    <td style="text-align: right;">${parseFloat(venta.totalR).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
                     <td style="text-align: right;">${parseFloat(venta.totalChasis).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
                 </tr>`;
             });
@@ -818,60 +766,6 @@
             alert('❌ Error: ' + error.message);
         });
     }
-
-             // --- Lógica Modal Vendedores ---
-            function abrirModalVendedores() {
-                document.getElementById('modalVendedores').style.display = 'flex';
-            }
-
-            function cerrarModalVendedores() {
-                document.getElementById('modalVendedores').style.display = 'none';
-            }
-
-            function marcarTodosVendedores(estado) {
-                const checks = document.querySelectorAll('.chk-vendedor');
-                checks.forEach(chk => chk.checked = estado);
-            }
-
-            function aplicarFiltroVendedores() {
-                const checks = document.querySelectorAll('.chk-vendedor:checked');
-                const codigos = Array.from(checks).map(c => c.value);
-
-                // Actualizar input oculto (para el backend)
-                document.getElementById('vendedor').value = codigos.join(',');
-
-                // Actualizar visualización
-                const display = document.getElementById('vendedorDisplay');
-                if (codigos.length === 0) {
-                    display.value = "";
-                    display.placeholder = "-- Todos --";
-                } else if (codigos.length === 1) {
-                    display.value = codigos[0]; // Muestra el código si es solo uno
-                } else {
-                    display.value = `${codigos.length} Vendedores seleccionados`;
-                }
-
-                cerrarModalVendedores();
-            }
-
-            // Ejecutar al cargar para mostrar el texto correcto si ya hay filtro aplicado
-            window.addEventListener('load', function() {
-                const valorActual = document.getElementById('vendedor').value;
-                if (valorActual) {
-                    const cantidad = valorActual.split(',').length;
-                    const display = document.getElementById('vendedorDisplay');
-                    if (cantidad === 1) display.value = valorActual;
-                    else display.value = `${cantidad} Vendedores seleccionados`;
-                }
-            });
-
-            // Cerrar modal al hacer clic fuera
-            window.onclick = function(event) {
-                const modal = document.getElementById('modalVendedores');
-                if (event.target === modal) {
-                    cerrarModalVendedores();
-                }
-            }
 </script>
 <script src="~/js/modal-factura.js"></script>
 }
