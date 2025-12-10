@@ -31,7 +31,15 @@ namespace MenuReporteria.Services
                     {
                         while (reader.Read())
                         {
-                            vendedores.Add(reader["ve_codigo"].ToString());
+                            var codigo = reader["VE_CODIGO"].ToString().Trim();
+                            var nombre = reader["VE_NOMBRE"].ToString().Trim();
+
+                            var Texto = string.IsNullOrWhiteSpace(nombre) ? codigo : $"{codigo} - {nombre}";
+
+                            if (!string.IsNullOrWhiteSpace(codigo))
+                            {
+                                vendedores.Add(Texto);
+                            }
                         }
                     }
                 }
@@ -222,7 +230,7 @@ namespace MenuReporteria.Services
                     if (!string.IsNullOrEmpty(filtros.Vendedor))
                     {
                         var listaVendedores = filtros.Vendedor.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                                              .Select(v => v.Trim())
+                                                              .Select(v => v.Contains(" - ") ? v.Split(" - ")[0].Trim() : v)
                                                               .ToList();
                         for (int i = 0; i < listaVendedores.Count; i++)
                         {

@@ -80,19 +80,16 @@
 
             <!-- Vendedor -->
             <div class="filter-group">
-                <label>Vendedor</label>
-                <select name="vendedor">
-                    <option value="">-- Seleccionar --</option>
-                    @if (Model?.Filtros?.VendedoresDisponibles != null)
-                    {
-                        @foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
-                        {
-                            <option value="@vendedor" selected="@(Model.Filtros.Vendedor == vendedor ? "selected" : null)">
-                                @vendedor
-                            </option>
-                        }
-                    }
-                </select>
+                <label for="vendedorDisplay">Vendedor</label>
+                <div class="cliente-input-group">
+                    <input type="text" id="vendedorDisplay" readonly
+                           placeholder="-- Todos --"
+                           value="@(string.IsNullOrEmpty(Model?.Filtros?.Vendedor) ? "" : "Vendedores Seleccionados")">
+
+                    <input type="hidden" id="vendedor" name="vendedor" value="@Model?.Filtros?.Vendedor">
+
+                    <button type="button" class="btn-modal-cliente" onclick="abrirModalVendedores()">🔍</button>
+                </div>
             </div>
 
             <!-- Valor Desde -->
@@ -242,6 +239,43 @@
         </div>
     </div>
 
+    <!-- Modal Vendedores -->
+    <div id="modalVendedores" class="modal-overlay" style="display:none;">
+        <div class="modal-content modal-clientes" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Seleccionar Vendedores</h2>
+                <button type="button" class="btn-close" onclick="cerrarModalVendedores()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="acciones-modal" style="margin-bottom: 10px; display: flex; gap: 10px;">
+                    <button type="button" onclick="marcarTodosVendedores(true)" class="btn-action btn-imprimir" style="padding: 5px 10px; font-size: 12px;">Marcar Todos</button>
+                    <button type="button" onclick="marcarTodosVendedores(false)" class="btn-action btn-retornar" style="padding: 5px 10px; font-size: 12px;">Desmarcar Todos</button>
+                </div>
+
+                <div id="listaVendedoresCheck" class="lista-clientes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                    @if (Model?.Filtros?.VendedoresDisponibles != null)
+                    {
+                        var seleccionados = (Model.Filtros.Vendedor ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
+                        {
+                            var isChecked = seleccionados.Contains(vendedor) ? "checked" : "";
+                            <div class="vendedor-check-item" style="padding: 5px; border-bottom: 1px solid #eee;">
+                                <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
+                                    <input type="checkbox" class="chk-vendedor" value="@vendedor" @isChecked style="margin-right: 10px; width: auto;">
+                                    <span><strong>@vendedor</strong></span>
+                                </label>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancelar" onclick="cerrarModalVendedores()">Cancelar</button>
+                <button type="button" class="btn-aceptar" onclick="aplicarFiltroVendedores()">Aplicar Selección</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="loading-spinner">
         <div class="spinner"></div>
@@ -328,444 +362,498 @@
 
 @section Scripts {
         <script>
-    // ==========================================
-    // 1. VARIABLES GLOBALES UNIFICADAS
-    // ==========================================
-    let todosLosRegistros = [];
-    let paginaActual = 1;
-    let registrosPorPagina = 20;
-    
-    // Variables para Clientes (Unificadas aquí)
-    let clientesDisponibles = [];
-    let paginaClientesActual = 1;
-    let totalClientesPaginas = 0;
-    let filtroClienteActual = "";
-    let timeoutBusqueda = null;
+            // ==========================================
+            // 1. VARIABLES GLOBALES UNIFICADAS
+            // ==========================================
+            let todosLosRegistros = [];
+            let paginaActual = 1;
+            let registrosPorPagina = 20;
 
-    // ==========================================
-    // 2. INICIALIZACIÓN Y EVENTOS
-    // ==========================================
-    
-    // Cargar datos iniciales si existen
-    @if (Model?.Ventas != null && Model.Ventas.Count > 0)
-    {
-        <text>
-        todosLosRegistros = @Html.Raw(Json.Serialize(Model.Ventas));
-        mostrarPagina(1);
-        </text>
-    }
+            // Variables para Clientes (Unificadas aquí)
+            let clientesDisponibles = [];
+            let paginaClientesActual = 1;
+            let totalClientesPaginas = 0;
+            let filtroClienteActual = "";
+            let timeoutBusqueda = null;
 
-    // Listeners para validación de fechas
-    document.getElementById('fechaDesde').addEventListener('change', validarFechas);
-    document.getElementById('fechaHasta').addEventListener('change', validarFechas);
+            // ==========================================
+            // 2. INICIALIZACIÓN Y EVENTOS
+            // ==========================================
 
-    // Listeners para validación de valores
-    document.getElementById('valorDesde').addEventListener('change', validarValores);
-    document.getElementById('valorHasta').addEventListener('change', validarValores);
-
-    // Listeners para Inputs (Enter key)
-    document.querySelectorAll('.filter-group input, .filter-group select').forEach(element => {
-        element.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                generarReporte();
-            }
-        });
-    });
-
-    // Listener para cerrar modales con clic fuera
-    window.onclick = function(event) {
-        const modal = document.getElementById('modalClientes');
-        const modalFactura = document.getElementById('modalFactura'); // Si existe
-        if (event.target === modal) {
-            cerrarModalClientes();
-        }
-        if (event.target === modalFactura) {
-            // Lógica para cerrar modal factura si es necesario
-        }
-    }
-
-    // ==========================================
-    // 3. FUNCIONES DE VALIDACIÓN
-    // ==========================================
-
-    function validarFechas() {
-        const fechaDesde = new Date(document.getElementById('fechaDesde').value);
-        const fechaHasta = new Date(document.getElementById('fechaHasta').value);
-        const alerta = document.getElementById('alertaFechas');
-
-        if (fechaDesde > fechaHasta && document.getElementById('fechaHasta').value) {
-            alerta.style.display = 'block';
-            return false;
-        } else {
-            alerta.style.display = 'none';
-            return true;
-        }
-    }
-
-    function validarValores() {
-        const valorDesde = parseFloat(document.getElementById('valorDesde').value) || 0;
-        const valorHasta = parseFloat(document.getElementById('valorHasta').value) || Infinity;
-        const alerta = document.getElementById('alertaValores');
-
-        if (valorDesde > valorHasta && document.getElementById('valorHasta').value) {
-            alerta.style.display = 'block';
-            return false;
-        } else {
-            alerta.style.display = 'none';
-            return true;
-        }
-    }
-
-    // ==========================================
-    // 4. LÓGICA DEL MODAL DE CLIENTES (CORREGIDA)
-    // ==========================================
-
-    function abrirModalClientes() {
-        const modal = document.getElementById('modalClientes');
-        const input = document.getElementById('buscarCliente');
-        
-        modal.style.display = 'flex';
-        input.value = "";
-        
-        // Pequeño timeout para asegurar el foco
-        setTimeout(() => input.focus(), 100);
-        
-        limpiarListaClientes();
-        paginaClientesActual = 1;
-    }
-
-    function cerrarModalClientes() {
-        document.getElementById('modalClientes').style.display = 'none';
-        limpiarListaClientes();
-    }
-
-    function limpiarListaClientes() {
-        document.getElementById('listaClientes').innerHTML =
-            '<p style="text-align:center;color:#999;">Ingresa al menos 2 caracteres para buscar</p>';
-        document.getElementById('paginacionClientes').innerHTML = '';
-    }
-
-    function buscarClientesDebounce(valor) {
-        if (timeoutBusqueda) clearTimeout(timeoutBusqueda);
-
-        if (valor.length < 2) {
-            limpiarListaClientes();
-            return;
-        }
-
-        document.getElementById('listaClientes').innerHTML =
-            '<p style="text-align:center;color:#999;">🔍 Buscando...</p>';
-
-        timeoutBusqueda = setTimeout(() => {
-            cargarClientes(valor, 1);
-        }, 500);
-    }
-
-    function buscarClientesEnter(event, valor) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            if (timeoutBusqueda) clearTimeout(timeoutBusqueda);
-
-            if (valor.length < 2) {
-                alert('⚠️ Ingresa al menos 2 caracteres para buscar');
-                return;
+            // Cargar datos iniciales si existen
+            @if (Model?.Ventas != null && Model.Ventas.Count > 0)
+            {
+                    <text>
+                    todosLosRegistros = @Html.Raw(Json.Serialize(Model.Ventas));
+                    mostrarPagina(1);
+                    </text>
             }
 
-            document.getElementById('listaClientes').innerHTML =
-                '<p style="text-align:center;color:#999;">🔍 Buscando...</p>';
-            cargarClientes(valor, 1);
-        }
-    }
+            // Listeners para validación de fechas
+            document.getElementById('fechaDesde').addEventListener('change', validarFechas);
+            document.getElementById('fechaHasta').addEventListener('change', validarFechas);
 
-    function cargarClientes(filtro, pagina) {
-        filtroClienteActual = filtro;
-        paginaClientesActual = pagina;
+            // Listeners para validación de valores
+            document.getElementById('valorDesde').addEventListener('change', validarValores);
+            document.getElementById('valorHasta').addEventListener('change', validarValores);
 
-        // Aseguramos que la URL sea correcta
-        const url = `@Url.Action("ObtenerClientes", "Ventas")?filtro=${encodeURIComponent(filtro)}&pagina=${pagina}&registrosPorPagina=15`;
+            // Listeners para Inputs (Enter key)
+            document.querySelectorAll('.filter-group input, .filter-group select').forEach(element => {
+                element.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        generarReporte();
+                    }
+                });
+            });
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                // Validamos la respuesta
-                clientesDisponibles = data.clientes || [];
-                totalClientesPaginas = data.totalPaginas || 0;
-
-                if (clientesDisponibles.length > 0) {
-                    mostrarClientes(clientesDisponibles);
-                    mostrarPaginacionClientes(data.total, pagina, totalClientesPaginas);
-                } else {
-                    const mensaje = data.mensaje || 'No se encontraron clientes';
-                    document.getElementById('listaClientes').innerHTML =
-                        `<p style="text-align:center;color:#999;">❌ ${mensaje}</p>`;
-                    document.getElementById('paginacionClientes').innerHTML = '';
+            // Listener para cerrar modales con clic fuera
+            window.onclick = function(event) {
+                const modal = document.getElementById('modalClientes');
+                const modalFactura = document.getElementById('modalFactura'); // Si existe
+                if (event.target === modal) {
+                    cerrarModalClientes();
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
+                if (event.target === modalFactura) {
+                    // Lógica para cerrar modal factura si es necesario
+                }
+            }
+
+            // ==========================================
+            // 3. FUNCIONES DE VALIDACIÓN
+            // ==========================================
+
+            function validarFechas() {
+                const fechaDesde = new Date(document.getElementById('fechaDesde').value);
+                const fechaHasta = new Date(document.getElementById('fechaHasta').value);
+                const alerta = document.getElementById('alertaFechas');
+
+                if (fechaDesde > fechaHasta && document.getElementById('fechaHasta').value) {
+                    alerta.style.display = 'block';
+                    return false;
+                } else {
+                    alerta.style.display = 'none';
+                    return true;
+                }
+            }
+
+            function validarValores() {
+                const valorDesde = parseFloat(document.getElementById('valorDesde').value) || 0;
+                const valorHasta = parseFloat(document.getElementById('valorHasta').value) || Infinity;
+                const alerta = document.getElementById('alertaValores');
+
+                if (valorDesde > valorHasta && document.getElementById('valorHasta').value) {
+                    alerta.style.display = 'block';
+                    return false;
+                } else {
+                    alerta.style.display = 'none';
+                    return true;
+                }
+            }
+
+            // ==========================================
+            // 4. LÓGICA DEL MODAL DE CLIENTES (CORREGIDA)
+            // ==========================================
+
+            function abrirModalClientes() {
+                const modal = document.getElementById('modalClientes');
+                const input = document.getElementById('buscarCliente');
+
+                modal.style.display = 'flex';
+                input.value = "";
+
+                // Pequeño timeout para asegurar el foco
+                setTimeout(() => input.focus(), 100);
+
+                limpiarListaClientes();
+                paginaClientesActual = 1;
+            }
+
+            function cerrarModalClientes() {
+                document.getElementById('modalClientes').style.display = 'none';
+                limpiarListaClientes();
+            }
+
+            function limpiarListaClientes() {
                 document.getElementById('listaClientes').innerHTML =
-                    '<p style="text-align:center;color:#d32f2f;">⚠️ Error de conexión al buscar clientes</p>';
-            });
-    }
-
-    function mostrarClientes(clientes) {
-        const lista = document.getElementById('listaClientes');
-        let html = '';
-
-        clientes.forEach(cliente => {
-            // Escapar comillas simples para evitar errores en el onclick
-            const codigo = String(cliente.codigo).replace(/'/g, "\\'");
-            const nombre = String(cliente.nombre).replace(/'/g, "\\'");
-            
-            html += `<div class="cliente-item" onclick="seleccionarCliente('${codigo}', '${nombre}')">
-                <div class="cliente-codigo">${cliente.codigo}</div>
-                <div class="cliente-nombre">${cliente.nombre}</div>
-            </div>`;
-        });
-        lista.innerHTML = html;
-    }
-
-    function mostrarPaginacionClientes(total, paginaActual, totalPaginas) {
-        const contenedor = document.getElementById('paginacionClientes');
-        if (totalPaginas <= 1) {
-            contenedor.innerHTML = '';
-            return;
-        }
-
-        let html = `<div class="paginacion-clientes">
-            <small>Página ${paginaActual} de ${totalPaginas} (${total} clientes)</small>
-            <div class="paginacion-botones">`;
-
-        if (paginaActual > 1) {
-            html += `<button class="pag-btn" onclick="cargarClientes('${filtroClienteActual}', ${paginaActual - 1})">←</button>`;
-        }
-
-        // Lógica simple de paginación para no saturar botones
-        for (let i = Math.max(1, paginaActual - 2); i <= Math.min(totalPaginas, paginaActual + 2); i++) {
-            if (i === paginaActual) {
-                html += `<button class="pag-btn active">${i}</button>`;
-            } else {
-                html += `<button class="pag-btn" onclick="cargarClientes('${filtroClienteActual}', ${i})">${i}</button>`;
+                    '<p style="text-align:center;color:#999;">Ingresa al menos 2 caracteres para buscar</p>';
+                document.getElementById('paginacionClientes').innerHTML = '';
             }
-        }
 
-        if (paginaActual < totalPaginas) {
-            html += `<button class="pag-btn" onclick="cargarClientes('${filtroClienteActual}', ${paginaActual + 1})">→</button>`;
-        }
+            function buscarClientesDebounce(valor) {
+                if (timeoutBusqueda) clearTimeout(timeoutBusqueda);
 
-        html += `</div></div>`;
-        contenedor.innerHTML = html;
-    }
+                if (valor.length < 2) {
+                    limpiarListaClientes();
+                    return;
+                }
 
-    function seleccionarCliente(codigo, nombre) {
-        document.getElementById('clienteInput').value = nombre;
-        cerrarModalClientes();
-    }
+                document.getElementById('listaClientes').innerHTML =
+                    '<p style="text-align:center;color:#999;">🔍 Buscando...</p>';
 
-    // ==========================================
-    // 5. LÓGICA GENERAL (FILTROS, REPORTE, PDF)
-    // ==========================================
+                timeoutBusqueda = setTimeout(() => {
+                    cargarClientes(valor, 1);
+                }, 500);
+            }
 
-    function toggleFiltros() {
-        const filtros = document.getElementById('filtrosForm');
-        const icon = document.getElementById('toggleIcon');
+            function buscarClientesEnter(event, valor) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (timeoutBusqueda) clearTimeout(timeoutBusqueda);
 
-        if (filtros.classList.contains('hidden')) {
-            filtros.classList.remove('hidden'); // Clase CSS debe estar definida o usar style.display
-            // Si usas style inline en el HTML original:
-            if(filtros.style.display === 'none') filtros.style.display = 'block';
-            icon.textContent = '🔽';
-        } else {
-            filtros.classList.add('hidden');
-             // Si usas style inline:
-            if(filtros.style.display !== 'none') filtros.style.display = 'none';
-            icon.textContent = '▶️';
-        }
-    }
+                    if (valor.length < 2) {
+                        alert('⚠️ Ingresa al menos 2 caracteres para buscar');
+                        return;
+                    }
 
-    function generarReporte() {
-        if (!validarFechas()) { alert('⚠️ Fecha Inválida'); return; }
-        if (!validarValores()) { alert('⚠️ Valor Inválido'); return; }
+                    document.getElementById('listaClientes').innerHTML =
+                        '<p style="text-align:center;color:#999;">🔍 Buscando...</p>';
+                    cargarClientes(valor, 1);
+                }
+            }
 
-        const form = document.getElementById('filtrosForm');
-        const formData = new FormData(form);
-        
-        // Ocultar filtros al buscar para dar espacio
-        const filtros = document.getElementById('filtrosForm');
-        filtros.classList.add('hidden'); 
+            function cargarClientes(filtro, pagina) {
+                filtroClienteActual = filtro;
+                paginaClientesActual = pagina;
 
-        paginaActual = 1;
-        document.getElementById('loadingSpinner').style.display = 'block';
-        document.getElementById('tablaResultados').style.display = 'none';
+                // Aseguramos que la URL sea correcta
+                const url = `@Url.Action("ObtenerClientes", "Ventas")?filtro=${encodeURIComponent(filtro)}&pagina=${pagina}&registrosPorPagina=15`;
 
-        fetch('@Url.Action("Generar", "Ventas")', {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                todosLosRegistros = data.data.ventas || [];
-                actualizarResumen(data);
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Validamos la respuesta
+                        clientesDisponibles = data.clientes || [];
+                        totalClientesPaginas = data.totalPaginas || 0;
+
+                        if (clientesDisponibles.length > 0) {
+                            mostrarClientes(clientesDisponibles);
+                            mostrarPaginacionClientes(data.total, pagina, totalClientesPaginas);
+                        } else {
+                            const mensaje = data.mensaje || 'No se encontraron clientes';
+                            document.getElementById('listaClientes').innerHTML =
+                                `<p style="text-align:center;color:#999;">❌ ${mensaje}</p>`;
+                            document.getElementById('paginacionClientes').innerHTML = '';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('listaClientes').innerHTML =
+                            '<p style="text-align:center;color:#d32f2f;">⚠️ Error de conexión al buscar clientes</p>';
+                    });
+            }
+
+            function mostrarClientes(clientes) {
+                const lista = document.getElementById('listaClientes');
+                let html = '';
+
+                clientes.forEach(cliente => {
+                    // Escapar comillas simples para evitar errores en el onclick
+                    const codigo = String(cliente.codigo).replace(/'/g, "\\'");
+                    const nombre = String(cliente.nombre).replace(/'/g, "\\'");
+
+                    html += `<div class="cliente-item" onclick="seleccionarCliente('${codigo}', '${nombre}')">
+                        <div class="cliente-codigo">${cliente.codigo}</div>
+                        <div class="cliente-nombre">${cliente.nombre}</div>
+                    </div>`;
+                });
+                lista.innerHTML = html;
+            }
+
+            function mostrarPaginacionClientes(total, paginaActual, totalPaginas) {
+                const contenedor = document.getElementById('paginacionClientes');
+                if (totalPaginas <= 1) {
+                    contenedor.innerHTML = '';
+                    return;
+                }
+
+                let html = `<div class="paginacion-clientes">
+                    <small>Página ${paginaActual} de ${totalPaginas} (${total} clientes)</small>
+                    <div class="paginacion-botones">`;
+
+                if (paginaActual > 1) {
+                    html += `<button class="pag-btn" onclick="cargarClientes('${filtroClienteActual}', ${paginaActual - 1})">←</button>`;
+                }
+
+                // Lógica simple de paginación para no saturar botones
+                for (let i = Math.max(1, paginaActual - 2); i <= Math.min(totalPaginas, paginaActual + 2); i++) {
+                    if (i === paginaActual) {
+                        html += `<button class="pag-btn active">${i}</button>`;
+                    } else {
+                        html += `<button class="pag-btn" onclick="cargarClientes('${filtroClienteActual}', ${i})">${i}</button>`;
+                    }
+                }
+
+                if (paginaActual < totalPaginas) {
+                    html += `<button class="pag-btn" onclick="cargarClientes('${filtroClienteActual}', ${paginaActual + 1})">→</button>`;
+                }
+
+                html += `</div></div>`;
+                contenedor.innerHTML = html;
+            }
+
+            function seleccionarCliente(codigo, nombre) {
+                document.getElementById('clienteInput').value = nombre;
+                cerrarModalClientes();
+            }
+
+            // ==========================================
+            // 5. LÓGICA GENERAL (FILTROS, REPORTE, PDF)
+            // ==========================================
+
+            function toggleFiltros() {
+                const filtros = document.getElementById('filtrosForm');
+                const icon = document.getElementById('toggleIcon');
+
+                if (filtros.classList.contains('hidden')) {
+                    filtros.classList.remove('hidden'); // Clase CSS debe estar definida o usar style.display
+                    // Si usas style inline en el HTML original:
+                    if(filtros.style.display === 'none') filtros.style.display = 'block';
+                    icon.textContent = '🔽';
+                } else {
+                    filtros.classList.add('hidden');
+                     // Si usas style inline:
+                    if(filtros.style.display !== 'none') filtros.style.display = 'none';
+                    icon.textContent = '▶️';
+                }
+            }
+
+            function generarReporte() {
+                if (!validarFechas()) { alert('⚠️ Fecha Inválida'); return; }
+                if (!validarValores()) { alert('⚠️ Valor Inválido'); return; }
+
+                const form = document.getElementById('filtrosForm');
+                const formData = new FormData(form);
+
+                // Ocultar filtros al buscar para dar espacio
+                const filtros = document.getElementById('filtrosForm');
+                filtros.classList.add('hidden');
+
+                paginaActual = 1;
+                document.getElementById('loadingSpinner').style.display = 'block';
+                document.getElementById('tablaResultados').style.display = 'none';
+
+                fetch('@Url.Action("Generar", "Ventas")', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        todosLosRegistros = data.data.ventas || [];
+                        actualizarResumen(data);
+                        mostrarPagina(1);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    document.getElementById('tablaResultados').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar los datos');
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    document.getElementById('tablaResultados').style.display = 'block';
+                });
+            }
+
+            function cambiarRegistrosPorPagina() {
+                registrosPorPagina = parseInt(document.getElementById('recordsPerPage').value);
+                paginaActual = 1;
                 mostrarPagina(1);
-            } else {
-                alert('Error: ' + data.message);
             }
-            document.getElementById('loadingSpinner').style.display = 'none';
-            document.getElementById('tablaResultados').style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al cargar los datos');
-            document.getElementById('loadingSpinner').style.display = 'none';
-            document.getElementById('tablaResultados').style.display = 'block';
-        });
-    }
 
-    function cambiarRegistrosPorPagina() {
-        registrosPorPagina = parseInt(document.getElementById('recordsPerPage').value);
-        paginaActual = 1;
-        mostrarPagina(1);
-    }
+            function mostrarPagina(pagina) {
+                paginaActual = pagina;
+                const inicio = (pagina - 1) * registrosPorPagina;
+                const fin = inicio + registrosPorPagina;
+                const registrosPagina = todosLosRegistros.slice(inicio, fin);
 
-    function mostrarPagina(pagina) {
-        paginaActual = pagina;
-        const inicio = (pagina - 1) * registrosPorPagina;
-        const fin = inicio + registrosPorPagina;
-        const registrosPagina = todosLosRegistros.slice(inicio, fin);
+                actualizarTabla(registrosPagina);
+                actualizarInfoPaginacion(inicio, fin);
+                generarBotonesPaginacion();
+            }
 
-        actualizarTabla(registrosPagina);
-        actualizarInfoPaginacion(inicio, fin);
-        generarBotonesPaginacion();
-    }
+            function actualizarInfoPaginacion(inicio, fin) {
+                const total = todosLosRegistros.length;
+                document.getElementById('rangoInicio').textContent = total > 0 ? inicio + 1 : 0;
+                document.getElementById('rangoFin').textContent = Math.min(fin, total);
+                document.getElementById('totalRegistros').textContent = total;
+            }
 
-    function actualizarInfoPaginacion(inicio, fin) {
-        const total = todosLosRegistros.length;
-        document.getElementById('rangoInicio').textContent = total > 0 ? inicio + 1 : 0;
-        document.getElementById('rangoFin').textContent = Math.min(fin, total);
-        document.getElementById('totalRegistros').textContent = total;
-    }
+            function generarBotonesPaginacion() {
+                const totalPaginas = Math.ceil(todosLosRegistros.length / registrosPorPagina);
+                const contenedor = document.getElementById('paginationControls');
+                let html = '';
 
-    function generarBotonesPaginacion() {
-        const totalPaginas = Math.ceil(todosLosRegistros.length / registrosPorPagina);
-        const contenedor = document.getElementById('paginationControls');
-        let html = '';
+                html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual - 1})" ${paginaActual === 1 ? 'disabled' : ''}>← Anterior</button>`;
 
-        html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual - 1})" ${paginaActual === 1 ? 'disabled' : ''}>← Anterior</button>`;
+                // Lógica simplificada de botones
+                let inicioPagina = Math.max(1, paginaActual - 2);
+                let finPagina = Math.min(totalPaginas, paginaActual + 2);
 
-        // Lógica simplificada de botones
-        let inicioPagina = Math.max(1, paginaActual - 2);
-        let finPagina = Math.min(totalPaginas, paginaActual + 2);
+                if (inicioPagina > 1) html += `<button class="pagination-btn" onclick="mostrarPagina(1)">1</button><span>...</span>`;
 
-        if (inicioPagina > 1) html += `<button class="pagination-btn" onclick="mostrarPagina(1)">1</button><span>...</span>`;
+                for (let i = inicioPagina; i <= finPagina; i++) {
+                    html += `<button class="pagination-btn ${i === paginaActual ? 'active' : ''}" onclick="mostrarPagina(${i})">${i}</button>`;
+                }
 
-        for (let i = inicioPagina; i <= finPagina; i++) {
-            html += `<button class="pagination-btn ${i === paginaActual ? 'active' : ''}" onclick="mostrarPagina(${i})">${i}</button>`;
-        }
+                if (finPagina < totalPaginas) html += `<span>...</span><button class="pagination-btn" onclick="mostrarPagina(${totalPaginas})">${totalPaginas}</button>`;
 
-        if (finPagina < totalPaginas) html += `<span>...</span><button class="pagination-btn" onclick="mostrarPagina(${totalPaginas})">${totalPaginas}</button>`;
+                html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual + 1})" ${paginaActual >= totalPaginas ? 'disabled' : ''}>Siguiente →</button>`;
 
-        html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual + 1})" ${paginaActual >= totalPaginas ? 'disabled' : ''}>Siguiente →</button>`;
+                contenedor.innerHTML = html;
+            }
 
-        contenedor.innerHTML = html;
-    }
+            function actualizarTabla(ventas) {
+                const tbody = document.querySelector('.results-table tbody');
+                if (ventas && ventas.length > 0) {
+                    let html = '';
+                    ventas.forEach(venta => {
+                        const fecha = new Date(venta.fecha);
+                        // Formateo básico de fecha
+                        const fechaFormateada = ('0' + fecha.getDate()).slice(-2) + '/' + ('0' + (fecha.getMonth() + 1)).slice(-2) + '/' + fecha.getFullYear();
 
-    function actualizarTabla(ventas) {
-        const tbody = document.querySelector('.results-table tbody');
-        if (ventas && ventas.length > 0) {
-            let html = '';
-            ventas.forEach(venta => {
-                const fecha = new Date(venta.fecha);
-                // Formateo básico de fecha
-                const fechaFormateada = ('0' + fecha.getDate()).slice(-2) + '/' + ('0' + (fecha.getMonth() + 1)).slice(-2) + '/' + fecha.getFullYear();
+                        html += `<tr>
+                            <td style="text-align:center;">
+                                <button class="btn-ver-factura" onclick="abrirModalFactura('${venta.factura}')">👁️</button>
+                            </td>
+                            <td>${fechaFormateada}</td>
+                            <td>${venta.factura}</td>
+                            <td>${venta.ncf || ''}</td>
+                            <td>${venta.codigoCliente || ''}</td>
+                            <td>${venta.cliente}</td>
+                            <td>${venta.vendedor || ''}</td>
+                            <td style="text-align: right;">${parseFloat(venta.montoNeto).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
+                            <td>${venta.moneda}</td>
+                            <td style="text-align: right;">${parseFloat(venta.tasa).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
+                            <td style="text-align: right;">${parseFloat(venta.totalChasis).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="17" class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No se encontraron resultados</div></td></tr>`;
+                }
+            }
 
-                html += `<tr>
-                    <td style="text-align:center;">
-                        <button class="btn-ver-factura" onclick="abrirModalFactura('${venta.factura}')">👁️</button>
-                    </td>
-                    <td>${fechaFormateada}</td>
-                    <td>${venta.factura}</td>
-                    <td>${venta.ncf || ''}</td>
-                    <td>${venta.codigoCliente || ''}</td>
-                    <td>${venta.cliente}</td>
-                    <td>${venta.vendedor || ''}</td>
-                    <td style="text-align: right;">${parseFloat(venta.montoNeto).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
-                    <td>${venta.moneda}</td>
-                    <td style="text-align: right;">${parseFloat(venta.tasa).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
-                    <td style="text-align: right;">${parseFloat(venta.totalChasis).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
-                </tr>`;
-            });
-            tbody.innerHTML = html;
-        } else {
-            tbody.innerHTML = `<tr><td colspan="17" class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No se encontraron resultados</div></td></tr>`;
-        }
-    }
+            function actualizarResumen(data) {
+                document.getElementById('totalFacturas').textContent = data.totalFacturas;
+                document.getElementById('totalChasis').textContent = data.totalChasis;
+                document.getElementById('valorTotal').textContent = 'RD$ ' + data.valorTotal;
+            }
 
-    function actualizarResumen(data) {
-        document.getElementById('totalFacturas').textContent = data.totalFacturas;
-        document.getElementById('totalChasis').textContent = data.totalChasis;
-        document.getElementById('valorTotal').textContent = 'RD$ ' + data.valorTotal;
-    }
+            function imprimirReporte() {
+                if (todosLosRegistros.length === 0) {
+                    alert('⚠️ No hay datos cargados para imprimir.'); return;
+                }
+                const formData = new FormData(document.getElementById('filtrosForm'));
+                document.getElementById('loadingSpinner').style.display = 'block';
 
-    function imprimirReporte() {
-        if (todosLosRegistros.length === 0) {
-            alert('⚠️ No hay datos cargados para imprimir.'); return;
-        }
-        const formData = new FormData(document.getElementById('filtrosForm'));
-        document.getElementById('loadingSpinner').style.display = 'block';
+                fetch('@Url.Action("GenerarPDF", "Ventas")', { method: 'POST', body: formData })
+                .then(response => {
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    if (response.ok) return response.blob();
+                    throw new Error('Error al generar el PDF');
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `ReporteVentas_${new Date().toISOString().slice(0, 10)}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    alert('❌ Error: ' + error.message);
+                });
+            }
 
-        fetch('@Url.Action("GenerarPDF", "Ventas")', { method: 'POST', body: formData })
-        .then(response => {
-            document.getElementById('loadingSpinner').style.display = 'none';
-            if (response.ok) return response.blob();
-            throw new Error('Error al generar el PDF');
-        })
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `ReporteVentas_${new Date().toISOString().slice(0, 10)}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        })
-        .catch(error => {
-            document.getElementById('loadingSpinner').style.display = 'none';
-            alert('❌ Error: ' + error.message);
-        });
-    }
+            function exportarReporte() {
+                if (todosLosRegistros.length === 0) {
+                    alert('⚠️ No hay datos cargados para exportar.'); return;
+                }
+                const formData = new FormData(document.getElementById('filtrosForm'));
+                document.getElementById('loadingSpinner').style.display = 'block';
 
-    function exportarReporte() {
-        if (todosLosRegistros.length === 0) {
-            alert('⚠️ No hay datos cargados para exportar.'); return;
-        }
-        const formData = new FormData(document.getElementById('filtrosForm'));
-        document.getElementById('loadingSpinner').style.display = 'block';
+                fetch('@Url.Action("ExportarExcel", "Ventas")', { method: 'POST', body: formData })
+                .then(response => {
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    if (response.ok) return response.blob();
+                    throw new Error('Error al generar el Excel');
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `ReporteVentas_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    document.getElementById('loadingSpinner').style.display = 'none';
+                    alert('❌ Error: ' + error.message);
+                });
+            }
 
-        fetch('@Url.Action("ExportarExcel", "Ventas")', { method: 'POST', body: formData })
-        .then(response => {
-            document.getElementById('loadingSpinner').style.display = 'none';
-            if (response.ok) return response.blob();
-            throw new Error('Error al generar el Excel');
-        })
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `ReporteVentas_${new Date().toISOString().slice(0, 10)}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        })
-        .catch(error => {
-            document.getElementById('loadingSpinner').style.display = 'none';
-            alert('❌ Error: ' + error.message);
-        });
-    }
-</script>
-<script src="~/js/modal-factura.js"></script>
+                     // --- Lógica Modal Vendedores ---
+                    function abrirModalVendedores() {
+                        document.getElementById('modalVendedores').style.display = 'flex';
+                    }
+
+                    function cerrarModalVendedores() {
+                        document.getElementById('modalVendedores').style.display = 'none';
+                    }
+
+                    function marcarTodosVendedores(estado) {
+                        const checks = document.querySelectorAll('.chk-vendedor');
+                        checks.forEach(chk => chk.checked = estado);
+                    }
+
+                    function aplicarFiltroVendedores() {
+                        const checks = document.querySelectorAll('.chk-vendedor:checked');
+                        const codigos = Array.from(checks).map(c => c.value);
+
+                        // Actualizar input oculto (para el backend)
+                        document.getElementById('vendedor').value = codigos.join(',');
+
+                        // Actualizar visualización
+                        const display = document.getElementById('vendedorDisplay');
+                        if (codigos.length === 0) {
+                            display.value = "";
+                            display.placeholder = "-- Todos --";
+                        } else if (codigos.length === 1) {
+                            display.value = codigos[0]; // Muestra el código si es solo uno
+                        } else {
+                            display.value = `${codigos.length} Vendedores seleccionados`;
+                        }
+
+                        cerrarModalVendedores();
+                    }
+
+                    // Ejecutar al cargar para mostrar el texto correcto si ya hay filtro aplicado
+                    window.addEventListener('load', function() {
+                        const valorActual = document.getElementById('vendedor').value;
+                        if (valorActual) {
+                            const cantidad = valorActual.split(',').length;
+                            const display = document.getElementById('vendedorDisplay');
+                            if (cantidad === 1) display.value = valorActual;
+                            else display.value = `${cantidad} Vendedores seleccionados`;
+                        }
+                    });
+
+                    // Cerrar modal al hacer clic fuera
+                    window.onclick = function(event) {
+                        const modal = document.getElementById('modalVendedores');
+                        if (event.target === modal) {
+                            cerrarModalVendedores();
+                        }
+                    }
+        </script>
+        <script src="~/js/modal-factura.js"></script>
 }
