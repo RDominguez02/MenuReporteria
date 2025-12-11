@@ -1,0 +1,793 @@
+﻿@model ResultadoReporteVentasChasis
+
+@{
+    ViewData["Title"] = "Reporte de Ventas de Chasis";
+}
+
+<link rel="stylesheet" href="~/css/reporte-chasis.css" />
+
+<div class="reporte-container">
+    <!-- Header -->
+    <div class="reporte-header">
+        <div class="reporte-header-left">
+            <div class="reporte-header-icon">🚗</div>
+            <h1>Detalle de Ventas de Chasis</h1>
+        </div>
+
+        <!-- Resumen en el Header -->
+        <div class="header-summary">
+            <div class="header-summary-item">
+                <div class="header-summary-label">Total Registros</div>
+                <div class="header-summary-value" id="totalRegistros">@(Model?.TotalRegistros ?? 0)</div>
+            </div>
+            <div class="header-summary-item">
+                <div class="header-summary-label">Total Chasis</div>
+                <div class="header-summary-value" id="totalChasis">@(Model?.TotalChasis ?? 0)</div>
+            </div>
+        </div>
+
+        <!-- Botones en el Header -->
+        <div class="header-actions">
+            <button type="button" class="btn-toggle-filters" onclick="toggleFiltros()">
+                <span id="toggleIcon">🔽</span> Desplegar filtros
+            </button>
+            <button type="button" class="btn-action btn-aceptar" onclick="generarReporte()">
+                ✓ Filtrar
+            </button>
+            <button type="button" class="btn-action btn-imprimir" onclick="imprimirReporte()">
+                🖨️ Imprimir
+            </button>
+            <button type="button" class="btn-action btn-exportar" onclick="exportarReporte()">
+                📥 Exportar
+            </button>
+            <button type="button" class="btn-action btn-retornar" onclick="window.location.href='@Url.Action("Index", "Home")'">
+                ← Retornar
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <form id="filtrosForm" class="filters-section" method="post" action="@Url.Action("Generar", "VentasChasis")">
+        <div class="filters-title">Filtros de Búsqueda</div>
+
+        <div class="filters-grid">
+            <!-- Fecha Desde -->
+            <div class="filter-group">
+                <label>Desde la Fecha</label>
+                <input type="date" id="fechaDesde" name="fechaDesde" value="@Model?.Filtros?.FechaDesde.ToString("yyyy-MM-dd")" required>
+                <small id="alertaFechas" class="alert-message" style="display:none;color:#d32f2f;">⚠️ La fecha desde no puede ser mayor que la fecha hasta</small>
+            </div>
+
+            <!-- Fecha Hasta -->
+            <div class="filter-group">
+                <label>Hasta la Fecha</label>
+                <input type="date" id="fechaHasta" name="fechaHasta" value="@Model?.Filtros?.FechaHasta.ToString("yyyy-MM-dd")" required>
+            </div>
+
+            <!-- Para el Chasis -->
+            <div class="filter-group">
+                <label>Para el Chasis</label>
+                <input type="text" id="chasis" name="chasis" placeholder="Número de chasis..." value="@Model?.Filtros?.Chasis">
+            </div>
+
+            <!-- Para la Marca -->
+            <div class="filter-group">
+                <label>Para la Marca</label>
+                <input type="text" id="marca" name="marca" placeholder="Marca..." value="@Model?.Filtros?.Marca">
+            </div>
+
+            <!-- Para el Modelo -->
+            <div class="filter-group">
+                <label>Para el Modelo</label>
+                <input type="text" id="modelo" name="modelo" placeholder="Modelo..." value="@Model?.Filtros?.Modelo">
+            </div>
+
+            <!-- Para el Color -->
+            <div class="filter-group">
+                <label>Para el Color</label>
+                <input type="text" id="color" name="color" placeholder="Color..." value="@Model?.Filtros?.Color">
+            </div>
+
+            <!-- Cliente -->
+            <div class="filter-group">
+                <label>Para el Cliente</label>
+                <div class="cliente-input-group">
+                    <input type="text" id="clienteInput" name="cliente" placeholder="Nombre del cliente..." value="@Model?.Filtros?.Cliente">
+                    <button type="button" class="btn-modal-cliente" onclick="abrirModalClientes()">🔍</button>
+                </div>
+            </div>
+
+            <!-- Vendedor -->
+            <div class="filter-group">
+                <label for="vendedorDisplay">Para el Vendedor</label>
+                <div class="cliente-input-group">
+                    <input type="text" id="vendedorDisplay" readonly
+                           placeholder="-- Todos --"
+                           value="@(string.IsNullOrEmpty(Model?.Filtros?.Vendedor) ? "" : "Vendedores Seleccionados")">
+
+                    <input type="hidden" id="vendedor" name="vendedor" value="@Model?.Filtros?.Vendedor">
+
+                    <button type="button" class="btn-modal-cliente" onclick="abrirModalVendedores()">🔍</button>
+                </div>
+            </div>
+
+            <!-- Almacén -->
+            <div class="filter-group">
+                <label>Para el Almacén</label>
+                <select name="almacen">
+                    <option value="">-- Todos --</option>
+                    @if (Model?.Filtros?.AlmacenesDisponibles != null)
+                    {
+                        @foreach (var almacen in Model.Filtros.AlmacenesDisponibles)
+                        {
+                            <option value="@almacen" selected="@(Model.Filtros.Almacen == almacen ? "selected" : null)">@almacen</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Factura -->
+            <div class="filter-group">
+                <label>Desde la Factura</label>
+                <input type="text" name="factura" placeholder="Número de factura" value="@Model?.Filtros?.Factura">
+            </div>
+
+            <!-- NCF Desde -->
+            <div class="filter-group">
+                <label>Desde el NCF</label>
+                <input type="text" name="ncfDesde" placeholder="NCF..." value="@Model?.Filtros?.NCFDesde">
+            </div>
+
+            <!-- NCF Hasta -->
+            <div class="filter-group">
+                <label>Hasta el NCF</label>
+                <input type="text" name="ncfHasta" placeholder="NCF..." value="@Model?.Filtros?.NCFHasta">
+            </div>
+
+            <!-- Turno -->
+            <div class="filter-group">
+                <label>Para el Turno</label>
+                <input type="text" name="turno" placeholder="Número de turno..." value="@Model?.Filtros?.Turno">
+            </div>
+
+            <!-- Caja -->
+            <div class="filter-group">
+                <label>Caja</label>
+                <select name="caja">
+                    <option value="">-- Todas --</option>
+                    @if (Model?.Filtros?.CajasDisponibles != null)
+                    {
+                        @foreach (var caja in Model.Filtros.CajasDisponibles)
+                        {
+                            <option value="@caja" selected="@(Model.Filtros.Caja == caja ? "selected" : null)">@caja</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Separador -->
+            <div class="filter-separator"></div>
+
+            <!-- Tipo de Documento -->
+            <div class="report-type-group">
+                <h4>Tipo de Documento</h4>
+                <div class="report-type-options-compact">
+                    <label><input type="radio" name="tipoDocumento" value="Facturas" checked> Facturas</label>
+                    <label><input type="radio" name="tipoDocumento" value="Coge"> COGE (Consignación)</label>
+                    <label><input type="radio" name="tipoDocumento" value="PreFactura"> Pre-Facturas</label>
+                    <label><input type="radio" name="tipoDocumento" value="Todas"> Todas</label>
+                </div>
+            </div>
+
+            <!-- Modo de Facturas -->
+            <div class="report-type-group">
+                <h4>Modo de Facturas</h4>
+                <div class="report-type-options-compact">
+                    <label><input type="radio" name="tipoFactura" value="Mayor"> Al x Mayor</label>
+                    <label><input type="radio" name="tipoFactura" value="Detalle"> Al Detalle</label>
+                    <label><input type="radio" name="tipoFactura" value="Todas" checked> Todas</label>
+                </div>
+            </div>
+
+            <!-- Incluir Anuladas -->
+            <div class="report-type-group">
+                <h4>Facturas Anuladas</h4>
+                <div class="report-type-options-compact">
+                    <label><input type="checkbox" name="incluirAnuladas" value="true"> Incluir Anuladas</label>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Modal Seleccionar Clientes -->
+    <div id="modalClientes" class="modal-overlay" style="display:none;">
+        <div class="modal-content modal-clientes">
+            <div class="modal-header">
+                <h2>Seleccionar Cliente</h2>
+                <button type="button" class="btn-close" onclick="cerrarModalClientes()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-buscar">
+                    <input type="text"
+                           id="buscarCliente"
+                           placeholder="Escribe código o nombre (mín. 2 caracteres)..."
+                           onkeyup="buscarClientesDebounce(this.value)"
+                           onkeypress="buscarClientesEnter(event, this.value)">
+                    <small style="color:#666;display:block;margin-top:5px;">
+                        💡 Busca automáticamente mientras escribes o presiona Enter para búsqueda inmediata
+                    </small>
+                </div>
+                <div id="listaClientes" class="lista-clientes">
+                    <p style="text-align:center;color:#999;">Ingresa al menos 2 caracteres para buscar</p>
+                </div>
+                <div id="paginacionClientes" class="paginacion-clientes-container"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancelar" onclick="cerrarModalClientes()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Vendedores -->
+    <div id="modalVendedores" class="modal-overlay" style="display:none;">
+        <div class="modal-content modal-clientes" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Seleccionar Vendedores</h2>
+                <button type="button" class="btn-close" onclick="cerrarModalVendedores()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="acciones-modal" style="margin-bottom: 10px; display: flex; gap: 10px;">
+                    <button type="button" onclick="marcarTodosVendedores(true)" class="btn-action btn-imprimir" style="padding: 5px 10px; font-size: 12px;">Marcar Todos</button>
+                    <button type="button" onclick="marcarTodosVendedores(false)" class="btn-action btn-retornar" style="padding: 5px 10px; font-size: 12px;">Desmarcar Todos</button>
+                </div>
+
+                <div id="listaVendedoresCheck" class="lista-clientes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                    @if (Model?.Filtros?.VendedoresDisponibles != null)
+                    {
+                        var seleccionados = (Model.Filtros.Vendedor ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var vendedor in Model.Filtros.VendedoresDisponibles)
+                        {
+                            var isChecked = seleccionados.Contains(vendedor) ? "checked" : "";
+                            <div class="vendedor-check-item" style="padding: 5px; border-bottom: 1px solid #eee;">
+                                <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
+                                    <input type="checkbox" class="chk-vendedor" value="@vendedor" @isChecked style="margin-right: 10px; width: auto;">
+                                    <span><strong>@vendedor</strong></span>
+                                </label>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancelar" onclick="cerrarModalVendedores()">Cancelar</button>
+                <button type="button" class="btn-aceptar" onclick="aplicarFiltroVendedores()">Aplicar Selección</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Cargando datos...</p>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            <div class="records-per-page">
+                <label>Registros por página:</label>
+                <select id="recordsPerPage" onchange="cambiarRegistrosPorPagina()">
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="pagination-text">
+                Mostrando <strong id="rangoInicio">0</strong> a <strong id="rangoFin">0</strong> de <strong id="totalRegistros">0</strong> registros
+            </div>
+        </div>
+        <div class="pagination-controls" id="paginationControls">
+        </div>
+    </div>
+
+    <!-- Tabla de Resultados -->
+    <div id="tablaResultados" class="table-container">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Control Nro.</th>
+                    <th>Almacén</th>
+                    <th>Vendedor</th>
+                    <th>Nro. Chasis</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Color</th>
+                    <th>Año</th>
+                    <th>Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Ventas != null && Model.Ventas.Count > 0)
+                {
+                    @foreach (var venta in Model.Ventas)
+                    {
+                        <tr>
+                            <td>@venta.Fecha.ToString("dd/MM/yyyy")</td>
+                            <td>@venta.Tipo</td>
+                            <td>@venta.ControlNro</td>
+                            <td>@venta.Almacen</td>
+                            <td>@venta.Vendedor</td>
+                            <td>@venta.NumeroChasis</td>
+                            <td>@venta.Marca</td>
+                            <td>@venta.Modelo</td>
+                            <td>@venta.Color</td>
+                            <td>@venta.Ano</td>
+                            <td style="text-align: right;">@venta.Precio.ToString("N2")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="11" class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">No hay datos para mostrar</div>
+                            <small>Ajusta los filtros y haz clic en "Filtrar" para cargar los datos</small>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    // ==========================================
+    // VARIABLES GLOBALES
+    // ==========================================
+    let todosLosRegistros = [];
+    let paginaActual = 1;
+    let registrosPorPagina = 20;
+
+    // Variables para búsqueda de clientes
+    let clientesDisponibles = [];
+    let paginaClientesActual = 1;
+    let totalClientesPaginas = 0;
+    let filtroClienteActual = "";
+    let timeoutBusqueda = null;
+
+    // ==========================================
+    // INICIALIZACIÓN
+    // ==========================================
+    window.addEventListener('load', function() {
+        // Cargar datos iniciales si el modelo vino lleno desde el servidor
+        @if (Model?.Ventas != null && Model.Ventas.Count > 0)
+        {
+                <text>
+                todosLosRegistros = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Ventas));
+                mostrarPagina(1);
+                </text>
+        }
+
+        // Inicializar visualización del input de vendedores
+        const valorVendedor = document.getElementById('vendedor').value;
+        if (valorVendedor) {
+            const cantidad = valorVendedor.split(',').length;
+            const display = document.getElementById('vendedorDisplay');
+            if (cantidad === 1) display.value = valorVendedor;
+            else display.value = `${cantidad} Vendedores seleccionados`;
+        }
+    });
+
+    // Listeners para validación y UX
+    document.getElementById('fechaDesde').addEventListener('change', validarFechas);
+    document.getElementById('fechaHasta').addEventListener('change', validarFechas);
+
+    // Permitir generar reporte con ENTER en los filtros
+    document.querySelectorAll('.filter-group input, .filter-group select').forEach(element => {
+        element.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                generarReporte();
+            }
+        });
+    });
+
+    // Cerrar modales al hacer clic fuera
+    window.onclick = function(event) {
+        const modalClientes = document.getElementById('modalClientes');
+        const modalVendedores = document.getElementById('modalVendedores');
+        if (event.target === modalClientes) cerrarModalClientes();
+        if (event.target === modalVendedores) cerrarModalVendedores();
+    }
+
+    // ==========================================
+    // LÓGICA PRINCIPAL DEL REPORTE
+    // ==========================================
+
+    function toggleFiltros() {
+        const filtros = document.getElementById('filtrosForm');
+        const icon = document.getElementById('toggleIcon');
+        if (filtros.classList.contains('hidden')) {
+            filtros.classList.remove('hidden');
+            icon.textContent = '🔽';
+        } else {
+            filtros.classList.add('hidden');
+            icon.textContent = '▶️';
+        }
+    }
+
+    function validarFechas() {
+        const fechaDesde = new Date(document.getElementById('fechaDesde').value);
+        const fechaHasta = new Date(document.getElementById('fechaHasta').value);
+        const alerta = document.getElementById('alertaFechas');
+
+        if (fechaDesde > fechaHasta && document.getElementById('fechaHasta').value) {
+            alerta.style.display = 'block';
+            return false;
+        } else {
+            alerta.style.display = 'none';
+            return true;
+        }
+    }
+
+    function generarReporte() {
+        if (!validarFechas()) {
+            alert('⚠️ La fecha "Desde" no puede ser mayor que "Hasta".');
+            return;
+        }
+
+        const form = document.getElementById('filtrosForm');
+        const formData = new FormData(form);
+
+        // UI Updates
+        const filtros = document.getElementById('filtrosForm');
+        const icon = document.getElementById('toggleIcon');
+        filtros.classList.add('hidden');
+        icon.textContent = '▶️';
+
+        paginaActual = 1;
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('tablaResultados').style.display = 'none';
+
+        fetch('@Url.Action("Generar", "VentasChasis")', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                todosLosRegistros = data.data.ventas || [];
+                actualizarResumen(data);
+                mostrarPagina(1);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cargar los datos. Verifique la consola.');
+        })
+        .finally(() => {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('tablaResultados').style.display = 'block';
+        });
+    }
+
+    function actualizarResumen(data) {
+        // Actualiza los contadores del header
+        document.getElementById('totalRegistros').textContent = data.totalRegistros;
+        document.getElementById('totalChasis').textContent = data.totalChasis;
+    }
+
+    // ==========================================
+    // PAGINACIÓN Y TABLA
+    // ==========================================
+
+    function cambiarRegistrosPorPagina() {
+        registrosPorPagina = parseInt(document.getElementById('recordsPerPage').value);
+        paginaActual = 1;
+        mostrarPagina(1);
+    }
+
+    function mostrarPagina(pagina) {
+        paginaActual = pagina;
+        const total = todosLosRegistros.length;
+
+        // Calcular índices
+        const inicio = (pagina - 1) * registrosPorPagina;
+        const fin = inicio + registrosPorPagina;
+
+        // Obtener slice de datos
+        const registrosPagina = todosLosRegistros.slice(inicio, fin);
+
+        // Renderizar
+        renderizarTabla(registrosPagina);
+
+        // Actualizar textos info
+        document.getElementById('rangoInicio').textContent = total > 0 ? inicio + 1 : 0;
+        document.getElementById('rangoFin').textContent = Math.min(fin, total);
+        document.getElementById('totalRegistros').textContent = total;
+
+        // Generar botones
+        generarBotonesPaginacion();
+    }
+
+    function renderizarTabla(ventas) {
+        const tbody = document.querySelector('.results-table tbody');
+
+        if (!ventas || ventas.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <div class="empty-state-text">No se encontraron resultados</div>
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        let html = '';
+        ventas.forEach(venta => {
+            // Manejo seguro de fechas
+            let fechaFormateada = "";
+            if (venta.fecha || venta.Fecha) {
+                const f = new Date(venta.fecha || venta.Fecha);
+                fechaFormateada = ('0' + f.getDate()).slice(-2) + '/' +
+                                  ('0' + (f.getMonth() + 1)).slice(-2) + '/' +
+                                  f.getFullYear();
+            }
+
+            // Manejo seguro de propiedades (PascalCase vs camelCase)
+            const tipo = venta.tipo || venta.Tipo || '';
+            const control = venta.controlNro || venta.ControlNro || '';
+            const almacen = venta.almacen || venta.Almacen || '';
+            const vendedor = venta.vendedor || venta.Vendedor || '';
+            const chasis = venta.numeroChasis || venta.NumeroChasis || '';
+            const marca = venta.marca || venta.Marca || '';
+            const modelo = venta.modelo || venta.Modelo || '';
+            const color = venta.color || venta.Color || '';
+            const ano = venta.ano || venta.Ano || '';
+            const precio = parseFloat(venta.precio || venta.Precio || 0);
+
+            html += `<tr>
+                <td>${fechaFormateada}</td>
+                <td>${tipo}</td>
+                <td>${control}</td>
+                <td>${almacen}</td>
+                <td>${vendedor}</td>
+                <td style="font-weight:bold;">${chasis}</td>
+                <td>${marca}</td>
+                <td>${modelo}</td>
+                <td>${color}</td>
+                <td>${ano}</td>
+                <td style="text-align: right;">${precio.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function generarBotonesPaginacion() {
+        const totalPaginas = Math.ceil(todosLosRegistros.length / registrosPorPagina);
+        const contenedor = document.getElementById('paginationControls');
+
+        if (totalPaginas <= 1) {
+            contenedor.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+
+        // Botón Anterior
+        html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual - 1})" ${paginaActual === 1 ? 'disabled' : ''}>← Anterior</button>`;
+
+        // Lógica de puntos suspensivos (...)
+        let inicioPagina = Math.max(1, paginaActual - 2);
+        let finPagina = Math.min(totalPaginas, paginaActual + 2);
+
+        if (inicioPagina > 1) {
+            html += `<button class="pagination-btn" onclick="mostrarPagina(1)">1</button>`;
+            if (inicioPagina > 2) html += `<span>...</span>`;
+        }
+
+        for (let i = inicioPagina; i <= finPagina; i++) {
+            html += `<button class="pagination-btn ${i === paginaActual ? 'active' : ''}" onclick="mostrarPagina(${i})">${i}</button>`;
+        }
+
+        if (finPagina < totalPaginas) {
+            if (finPagina < totalPaginas - 1) html += `<span>...</span>`;
+            html += `<button class="pagination-btn" onclick="mostrarPagina(${totalPaginas})">${totalPaginas}</button>`;
+        }
+
+        // Botón Siguiente
+        html += `<button class="pagination-btn" onclick="mostrarPagina(${paginaActual + 1})" ${paginaActual >= totalPaginas ? 'disabled' : ''}>Siguiente →</button>`;
+
+        contenedor.innerHTML = html;
+    }
+
+    // ==========================================
+    // MODAL DE CLIENTES (Lógica optimizada)
+    // ==========================================
+
+    function abrirModalClientes() {
+        const modal = document.getElementById('modalClientes');
+        const input = document.getElementById('buscarCliente');
+        modal.style.display = 'flex';
+        input.value = "";
+        setTimeout(() => input.focus(), 100);
+        limpiarListaClientes();
+        paginaClientesActual = 1;
+    }
+
+    function cerrarModalClientes() {
+        document.getElementById('modalClientes').style.display = 'none';
+        limpiarListaClientes();
+    }
+
+    function limpiarListaClientes() {
+        document.getElementById('listaClientes').innerHTML =
+            '<p style="text-align:center;color:#999;">Ingresa al menos 2 caracteres para buscar</p>';
+        document.getElementById('paginacionClientes').innerHTML = '';
+    }
+
+    function buscarClientesDebounce(valor) {
+        if (timeoutBusqueda) clearTimeout(timeoutBusqueda);
+        if (valor.length < 2) {
+            limpiarListaClientes();
+            return;
+        }
+        document.getElementById('listaClientes').innerHTML =
+            '<p style="text-align:center;color:#999;">🔍 Buscando...</p>';
+        timeoutBusqueda = setTimeout(() => { cargarClientes(valor, 1); }, 500);
+    }
+
+    function buscarClientesEnter(event, valor) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (timeoutBusqueda) clearTimeout(timeoutBusqueda);
+            if (valor.length < 2) {
+                alert('⚠️ Ingresa al menos 2 caracteres para buscar');
+                return;
+            }
+            document.getElementById('listaClientes').innerHTML =
+                '<p style="text-align:center;color:#999;">🔍 Buscando...</p>';
+            cargarClientes(valor, 1);
+        }
+    }
+
+    function cargarClientes(filtro, pagina) {
+        filtroClienteActual = filtro;
+        paginaClientesActual = pagina;
+
+        // Endpoint reutilizado del controlador
+        const url = `@Url.Action("ObtenerClientes", "VentasChasis")?filtro=${encodeURIComponent(filtro)}&pagina=${pagina}&registrosPorPagina=15`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                clientesDisponibles = data.clientes || [];
+                totalClientesPaginas = data.totalPaginas || 0;
+
+                if (clientesDisponibles.length > 0) {
+                    mostrarClientes(clientesDisponibles);
+                    mostrarPaginacionClientes(data.total, pagina, totalClientesPaginas);
+                } else {
+                    const mensaje = data.mensaje || 'No se encontraron clientes';
+                    document.getElementById('listaClientes').innerHTML = `<p style="text-align:center;color:#999;">❌ ${mensaje}</p>`;
+                    document.getElementById('paginacionClientes').innerHTML = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('listaClientes').innerHTML =
+                    '<p style="text-align:center;color:#d32f2f;">⚠️ Error de conexión al buscar clientes</p>';
+            });
+    }
+
+    function mostrarClientes(clientes) {
+        const lista = document.getElementById('listaClientes');
+        let html = '';
+        clientes.forEach(cliente => {
+            const codigo = String(cliente.codigo).replace(/'/g, "\\'");
+            const nombre = String(cliente.nombre).replace(/'/g, "\\'");
+            html += `<div class="cliente-item" onclick="seleccionarCliente('${codigo}', '${nombre}')">
+                        <div class="cliente-codigo">${cliente.codigo}</div>
+                        <div class="cliente-nombre">${cliente.nombre}</div>
+                     </div>`;
+        });
+        lista.innerHTML = html;
+    }
+
+    function mostrarPaginacionClientes(total, paginaActual, totalPaginas) {
+        const contenedor = document.getElementById('paginacionClientes');
+        if (totalPaginas <= 1) {
+            contenedor.innerHTML = '';
+            return;
+        }
+
+        let html = `<div class="paginacion-clientes">
+                        <small>Página ${paginaActual} de ${totalPaginas} (${total} clientes)</small>
+                        <div class="paginacion-botones">`;
+
+        if (paginaActual > 1) {
+            html += `<button class="pag-btn" onclick="cargarClientes('${filtroClienteActual}', ${paginaActual - 1})">←</button>`;
+        }
+
+        // Rango de botones
+        const range = 2;
+        const start = Math.max(1, paginaActual - range);
+        const end = Math.min(totalPaginas, paginaActual + range);
+
+        for (let i = start; i <= end; i++) {
+            const activeClass = i === paginaActual ? 'active' : '';
+            html += `<button class="pag-btn ${activeClass}" onclick="cargarClientes('${filtroClienteActual}', ${i})">${i}</button>`;
+        }
+
+        if (paginaActual < totalPaginas) {
+            html += `<button class="pag-btn" onclick="cargarClientes('${filtroClienteActual}', ${paginaActual + 1})">→</button>`;
+        }
+
+        html += `</div></div>`;
+        contenedor.innerHTML = html;
+    }
+
+    function seleccionarCliente(codigo, nombre) {
+        // En este reporte se busca por texto parcial, así que ponemos el nombre
+        document.getElementById('clienteInput').value = nombre;
+        cerrarModalClientes();
+    }
+
+    // ==========================================
+    // MODAL DE VENDEDORES (Multi-select)
+    // ==========================================
+
+    function abrirModalVendedores() {
+        document.getElementById('modalVendedores').style.display = 'flex';
+    }
+
+    function cerrarModalVendedores() {
+        document.getElementById('modalVendedores').style.display = 'none';
+    }
+
+    function marcarTodosVendedores(estado) {
+        const checks = document.querySelectorAll('.chk-vendedor');
+        checks.forEach(chk => chk.checked = estado);
+    }
+
+    function aplicarFiltroVendedores() {
+        const checks = document.querySelectorAll('.chk-vendedor:checked');
+        const codigos = Array.from(checks).map(c => c.value);
+
+        // Input hidden que se envía al servidor
+        document.getElementById('vendedor').value = codigos.join(',');
+
+        // Input visual
+        const display = document.getElementById('vendedorDisplay');
+        if (codigos.length === 0) {
+            display.value = "";
+            display.placeholder = "-- Todos --";
+        } else if (codigos.length === 1) {
+            display.value = codigos[0];
+        } else {
+            display.value = `${codigos.length} Vendedores seleccionados`;
+        }
+
+        cerrarModalVendedores();
+    }
+
+    // ==========================================
+    // EXPORTACIÓN
+    // ==========================================
+
+    function imprimirReporte() {
+        alert('Funcionalidad de impresión en desarrollo. Ver Reporte CxC para referencia de implementación.');
+        // Nota: Implementar endpoint GenerarPDF en Controller similar a CxC
+    }
+
+    function exportarReporte() {
+        alert('Funcionalidad de exportación en desarrollo. Ver Reporte CxC para referencia de implementación.');
+        // Nota: Implementar endpoint ExportarExcel en Controller similar a CxC
+    }
+</script>

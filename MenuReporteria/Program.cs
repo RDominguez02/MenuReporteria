@@ -8,6 +8,7 @@ builder.Services.AddControllersWithViews();
 // Registrar servicios
 builder.Services.AddTransient<CuentasPorCobrarService>();
 builder.Services.AddTransient<ReporteVentasService>();
+builder.Services.AddTransient<ReporteVentasChasisService>();
 
 var app = builder.Build();
 
