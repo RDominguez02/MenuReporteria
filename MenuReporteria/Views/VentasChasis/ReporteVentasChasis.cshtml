@@ -295,6 +295,7 @@
         <table class="results-table">
             <thead>
                 <tr>
+                    <th>Ver Factura</th>
                     <th>Fecha</th>
                     <th>Tipo</th>
                     <th>Control Nro.</th>
@@ -314,6 +315,11 @@
                     @foreach (var venta in Model.Ventas)
                     {
                         <tr>
+                            <td style="text-align: center;">
+                                <button class="btn-ver-factura" onclick="abrirModalFactura('@venta.ControlNro')">
+                                    👁️
+                                </button>
+                            </td>
                             <td>@venta.Fecha.ToString("dd/MM/yyyy")</td>
                             <td>@venta.Tipo</td>
                             <td>@venta.ControlNro</td>
@@ -331,7 +337,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="11" class="empty-state">
+                        <td colspan="12" class="empty-state">
                             <div class="empty-state-icon">📊</div>
                             <div class="empty-state-text">No hay datos para mostrar</div>
                             <small>Ajusta los filtros y haz clic en "Filtrar" para cargar los datos</small>
@@ -341,6 +347,10 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Modal Factura (reutilizado) -->
+    <div id="modalFactura" class="modal-factura"></div>
+
 </div>
 <script>
     // ==========================================
@@ -515,13 +525,13 @@
         generarBotonesPaginacion();
     }
 
-    function renderizarTabla(ventas) {
+        function renderizarTabla(ventas) {
         const tbody = document.querySelector('.results-table tbody');
 
         if (!ventas || ventas.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="empty-state">
+                    <td colspan="12" class="empty-state">
                         <div class="empty-state-icon">📊</div>
                         <div class="empty-state-text">No se encontraron resultados</div>
                     </td>
@@ -553,6 +563,11 @@
             const precio = parseFloat(venta.precio || venta.Precio || 0);
 
             html += `<tr>
+                <td style="text-align: center;">
+                    <button class="btn-ver-factura" onclick="abrirModalFactura('${control}')">
+                        👁️
+                    </button>
+                </td>
                 <td>${fechaFormateada}</td>
                 <td>${tipo}</td>
                 <td>${control}</td>
@@ -790,4 +805,265 @@
         alert('Funcionalidad de exportación en desarrollo. Ver Reporte CxC para referencia de implementación.');
         // Nota: Implementar endpoint ExportarExcel en Controller similar a CxC
     }
+
+        // ==========================================
+    // FUNCIONES PARA MODAL DE FACTURA
+    // ==========================================
+
+    function abrirModalFactura(numeroFactura) {
+        if (!numeroFactura) {
+            alert('⚠️ Error: No se pudo identificar el número de factura');
+            return;
+        }
+
+        const modal = document.getElementById('modalFactura');
+        document.body.style.overflow = 'hidden';
+
+        // Mostrar loading spinner mientras carga
+        modal.innerHTML = `
+            <div class="modal-factura-content" style="display:flex;align-items:center;justify-content:center;height:200px;">
+                <div class="spinner"></div>
+            </div>
+        `;
+        modal.classList.add('active');
+
+        // Cargar el HTML del modal
+        fetch(`@Url.Action("CargarModalDetalleFactura", "VentasChasis")?factura=${encodeURIComponent(numeroFactura)}`)
+            .then(r => r.text())
+            .then(html => {
+                modal.innerHTML = html;
+
+                // Luego cargar los datos
+                fetch(`@Url.Action("ObtenerDetalleFactura", "VentasChasis")?factura=${encodeURIComponent(numeroFactura)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            poblarModalConDatos(data.data);
+                        } else {
+                            mostrarErrorModal(data.message || 'Error al cargar el detalle');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        mostrarErrorModal('Error al conectar con el servidor');
+                    });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                modal.innerHTML = `
+                    <div class="modal-factura-content" style="padding:40px;text-align:center;">
+                        <h3 style="color:#e74c3c;">⚠️ Error al cargar la vista</h3>
+                        <p>No se pudo cargar el detalle de la factura.</p>
+                        <div style="margin-top:20px;">
+                            <button class="btn-modal btn-modal-secondary" onclick="cerrarModalFactura()">Cerrar</button>
+                        </div>
+                    </div>
+                `;
+            });
+    }
+
+    function cerrarModalFactura() {
+        const modal = document.getElementById('modalFactura');
+        modal.classList.remove('active');
+        modal.innerHTML = '';
+        document.body.style.overflow = 'auto';
+    }
+
+    function poblarModalConDatos(detalle) {
+        // Información General
+        const infoGeneralHTML = `
+            <div class="factura-section">
+                <div class="factura-section-title">📋 Información General</div>
+                <div class="factura-grid">
+                    <div class="factura-field">
+                        <label>Factura</label>
+                        <div class="factura-field-value">${detalle.factura || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Fecha</label>
+                        <div class="factura-field-value">${detalle.fecha ? new Date(detalle.fecha).toLocaleDateString('es-DO') : '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>NCF</label>
+                        <div class="factura-field-value">${detalle.ncf || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Vendedor</label>
+                        <div class="factura-field-value">${detalle.vendedor || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Moneda</label>
+                        <div class="factura-field-value">${detalle.moneda || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Tasa</label>
+                        <div class="factura-field-value">${detalle.tasa ? parseFloat(detalle.tasa).toLocaleString('es-DO', {minimumFractionDigits: 2}) : '-'}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Información del Cliente
+        const clienteHTML = `
+            <div class="factura-section">
+                <div class="factura-section-title">👤 Información del Cliente</div>
+                <div class="factura-grid">
+                    <div class="factura-field">
+                        <label>Código</label>
+                        <div class="factura-field-value">${detalle.clienteCodigo || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Nombre</label>
+                        <div class="factura-field-value">${detalle.clienteNombre || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>RNC</label>
+                        <div class="factura-field-value">${detalle.clienteRnc || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Teléfono</label>
+                        <div class="factura-field-value">${detalle.clienteTelefono || '-'}</div>
+                    </div>
+                    <div class="factura-field" style="grid-column: 1 / -1;">
+                        <label>Dirección</label>
+                        <div class="factura-field-value">${detalle.clienteDireccion || '-'}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Información del Chasis
+        const chasisHTML = `
+            <div class="factura-section">
+                <div class="factura-section-title">🚗 Información del Chasis</div>
+                <div class="factura-grid">
+                    <div class="factura-field">
+                        <label>Chasis</label>
+                        <div class="factura-field-value">${detalle.chasis || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Marca</label>
+                        <div class="factura-field-value">${detalle.marca || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Modelo</label>
+                        <div class="factura-field-value">${detalle.modelo || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Año</label>
+                        <div class="factura-field-value">${detalle.ano || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Motor</label>
+                        <div class="factura-field-value">${detalle.motor || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Placa</label>
+                        <div class="factura-field-value">${detalle.placa || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Color</label>
+                        <div class="factura-field-value">${detalle.color || '-'}</div>
+                    </div>
+                    <div class="factura-field">
+                        <label>Matrícula</label>
+                        <div class="factura-field-value">${detalle.matricula || '-'}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Tabla de Productos
+        let productosHTML = '';
+        if (detalle.productos && detalle.productos.length > 0) {
+            let filasProductos = '';
+            let totalBruto = 0;
+            let totalItbis = 0;
+
+            detalle.productos.forEach(prod => {
+                const total = parseFloat(prod.total || 0);
+                totalBruto += total;
+                totalItbis += parseFloat(prod.itbis || 0);
+
+                filasProductos += `
+                    <tr>
+                        <td>${prod.codigoFicha || '-'}</td>
+                        <td>${parseFloat(prod.cantidad || 0).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
+                        <td>${prod.unidadMedida || 'UD'}</td>
+                        <td>${prod.descripcion || '-'}</td>
+                        <td style="text-align: right;">${parseFloat(prod.precioUnitario || 0).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: right;">${parseFloat(prod.itbis || 0).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: right;">${total.toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            });
+
+            productosHTML = `
+                <div class="factura-section">
+                    <div class="factura-section-title">📦 Productos</div>
+                    <table class="productos-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Descripción</th>
+                                <th class="text-right">P. Unitario</th>
+                                <th class="text-right">ITBIS</th>
+                                <th class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filasProductos}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="factura-totales">
+                    <div class="factura-totales-grid">
+                        <div class="total-item">
+                            <label>Monto Bruto</label>
+                            <div class="total-item-value">${totalBruto.toLocaleString('es-DO', {minimumFractionDigits: 2})}</div>
+                        </div>
+                        <div class="total-item">
+                            <label>ITBIS</label>
+                            <div class="total-item-value">${totalItbis.toLocaleString('es-DO', {minimumFractionDigits: 2})}</div>
+                        </div>
+                        <div class="total-item">
+                            <label>Total Neto</label>
+                            <div class="total-item-value">${(totalBruto + totalItbis).toLocaleString('es-DO', {minimumFractionDigits: 2})}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Buscar el div de contenido del modal y llenar con HTML
+        const bodyModal = document.querySelector('.modal-factura-content .modal-body');
+        if (bodyModal) {
+            bodyModal.innerHTML = infoGeneralHTML + clienteHTML + chasisHTML + productosHTML;
+        }
+    }
+
+    function mostrarErrorModal(mensaje) {
+        const modal = document.getElementById('modalFactura');
+        modal.innerHTML = `
+            <div class="modal-factura-content" style="padding:40px;text-align:center;">
+                <h3 style="color:#e74c3c;">⚠️ Error</h3>
+                <p>${mensaje}</p>
+                <div style="margin-top:20px;">
+                    <button class="btn-modal btn-modal-secondary" onclick="cerrarModalFactura()">Cerrar</button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Cerrar modal al hacer clic fuera (si es necesario)
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('modalFactura');
+        if (event.target === modal) {
+            cerrarModalFactura();
+        }
+    });
 </script>
+<script src="~/js/modal-factura.js"></script>

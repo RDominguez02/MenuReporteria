@@ -739,3 +739,27 @@ body {
         flex-wrap: wrap;
     }
 }
+
+/* Botón Ver en la tabla */
+.btn-ver-factura {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+    .btn-ver-factura:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+    }
+
+    .btn-ver-factura:active {
+        transform: translateY(0);
+    }

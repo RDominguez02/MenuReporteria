@@ -393,7 +393,14 @@
 
 .btn-aceptar {
     background: linear-gradient(135deg, #0084ff 0%, #0066ff 100%);
+    padding: 8px 16px;
     color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-weight: 600;
 }
 
 .btn-imprimir {
@@ -675,19 +682,39 @@
     gap: 10px;
 }
 
+
+
 .btn-cancelar {
     padding: 8px 16px;
-    background-color: #f0f0f0;
+    background-color: #ffc107;
     border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s;
+    font-weight: 600;
 }
 
     .btn-cancelar:hover {
         background-color: #e0e0e0;
     }
+
+.btn-aplicar {
+    padding: 8px 16px;
+    background-color: #00bcd4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+    .btn-aplicar:hover {
+        background-color: #e0e0e0;
+    }
+
+
 
 /* Cliente Input Group */
 .cliente-input-group {

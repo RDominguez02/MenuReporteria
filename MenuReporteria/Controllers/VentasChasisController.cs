@@ -9,10 +9,12 @@ namespace MenuReporteria.Controllers
     public class VentasChasisController : Controller
     {
         private readonly ReporteVentasChasisService _reporteService;
+        private readonly ReporteVentasService _ventasService; // Agregar esta dependencia
 
-        public VentasChasisController(ReporteVentasChasisService reporteService)
+        public VentasChasisController(ReporteVentasChasisService reporteService, ReporteVentasService ventasService)
         {
             _reporteService = reporteService;
+            _ventasService = ventasService;
         }
 
         public IActionResult Index()
@@ -115,6 +117,47 @@ namespace MenuReporteria.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===== NUEVOS MÉTODOS PARA VER FACTURA =====
+
+        [HttpGet]
+        public IActionResult CargarModalDetalleFactura(string factura)
+        {
+            var model = new DetalleFacturaViewModel
+            {
+                Factura = factura
+            };
+            return PartialView("~/Views/Shared/_ModalDetalleFactura.cshtml", model);
+        }
+
+        [HttpGet]
+        public IActionResult ObtenerDetalleFactura(string factura)
+        {
+            try
+            {
+                // Obtener el detalle real desde la base de datos usando el servicio de Ventas
+                var detalle = _ventasService.ObtenerDetalleFactura(factura);
+
+                if (detalle == null || string.IsNullOrEmpty(detalle.Factura))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "No se encontró la factura especificada"
+                    });
+                }
+
+                return Json(new { success = true, data = detalle });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"Error al obtener el detalle: {ex.Message}"
+                });
             }
         }
     }
